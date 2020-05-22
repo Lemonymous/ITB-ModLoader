@@ -37,155 +37,25 @@ end
 -- UI hooks
 
 local initialLoadingFinishedHookFired = false
-local initialLoadingFinishedHooks = {}
-function sdlext.addInitialLoadingFinishedHook(fn)
-	assert(type(fn) == "function")
-	table.insert(initialLoadingFinishedHooks, fn)
-end
-
-local uiRootCreatedHooks = {}
-function sdlext.addUiRootCreatedHook(fn)
-	assert(type(fn) == "function")
-	table.insert(uiRootCreatedHooks, fn)
-end
-
-local gameWindowResizedHooks = {}
-function sdlext.addGameWindowResizedHook(fn)
-	assert(type(fn) == "function")
-	table.insert(gameWindowResizedHooks, fn)
-end
-
-local mainMenuEnteredHooks = {}
-function sdlext.addMainMenuEnteredHook(fn)
-	assert(type(fn) == "function")
-	table.insert(mainMenuEnteredHooks, fn)
-end
-
-local mainMenuExitedHooks = {}
-function sdlext.addMainMenuExitedHook(fn)
-	assert(type(fn) == "function")
-	table.insert(mainMenuExitedHooks, fn)
-end
-
-local hangarEnteredHooks = {}
-function sdlext.addHangarEnteredHook(fn)
-	assert(type(fn) == "function")
-	table.insert(hangarEnteredHooks, fn)
-end
-
-local hangarExitedHooks = {}
-function sdlext.addHangarExitedHook(fn)
-	assert(type(fn) == "function")
-	table.insert(hangarExitedHooks, fn)
-end
-
-local gameEnteredHooks = {}
-function sdlext.addGameEnteredHook(fn)
-	assert(type(fn) == "function")
-	table.insert(gameEnteredHooks, fn)
-end
-
-local gameExitedHooks = {}
-function sdlext.addGameExitedHook(fn)
-	assert(type(fn) == "function")
-	table.insert(gameExitedHooks, fn)
-end
-
-local consoleToggledHooks = {}
-function sdlext.addConsoleToggledHook(fn)
-	assert(type(fn) == "function")
-	table.insert(consoleToggledHooks, fn)
-end
-
-local frameDrawnHooks = {}
-function sdlext.addFrameDrawnHook(fn)
-	assert(type(fn) == "function")
-	table.insert(frameDrawnHooks, fn)
-end
-
-local windowVisibleHooks = {}
-function sdlext.addWindowVisibleHook(fn)
-	assert(type(fn) == "function")
-	table.insert(windowVisibleHooks, fn)
-end
-
-local settingsChangedHooks = {}
-function sdlext.addSettingsChangedHook(fn)
-	assert(type(fn) == "function")
-	table.insert(settingsChangedHooks, fn)
-end
 
 local isShiftHeld = false
-local shiftToggledHooks = {}
-function sdlext.addShiftToggledHook(fn)
-	assert(type(fn) == "function")
-	table.insert(shiftToggledHooks, fn)
-end
-
 function sdlext.isShiftDown()
 	return isShiftHeld
 end
 
 local isAltHeld = false
-local altToggledHooks = {}
-function sdlext.addAltToggledHook(fn)
-	assert(type(fn) == "function")
-	table.insert(altToggledHooks, fn)
-end
-
 function sdlext.isAltDown()
 	return isAltHeld
 end
 
 local isCtrlHeld = false
-local ctrlToggledHooks = {}
-function sdlext.addCtrlToggledHook(fn)
-	assert(type(fn) == "function")
-	table.insert(ctrlToggledHooks, fn)
-end
-
 function sdlext.isCtrlDown()
 	return isCtrlHeld
 end
 
--- Key hooks are fired WHEREVER in the game you are, whenever
--- you press a key. So your hooks will need to have a lot of
--- additional restrictions on when they're supposed to fire.
-
--- Pre key hooks are fired BEFORE the uiRoot handles the key events.
--- These hooks can be used to completely hijack input and bypass the
--- normal focus-based key event handling.
-local preKeyDownHooks = {}
-function sdlext.addPreKeyDownHook(fn)
-	assert(type(fn) == "function")
-	table.insert(preKeyDownHooks, fn)
-end
-
-local preKeyUpHooks = {}
-function sdlext.addPreKeyUpHook(fn)
-	assert(type(fn) == "function")
-	table.insert(preKeyUpHooks, fn)
-end
-
--- Post key hooks are fired AFTER the uiRoot has handled the key
--- events. These hooks can be used to process leftover key events
--- which haven't been handled via the normal focus-based key event
--- handling.
-local postKeyDownHooks = {}
-function sdlext.addPostKeyDownHook(fn)
-	assert(type(fn) == "function")
-	table.insert(postKeyDownHooks, fn)
-end
-
-local postKeyUpHooks = {}
-function sdlext.addPostKeyUpHook(fn)
-	assert(type(fn) == "function")
-	table.insert(postKeyUpHooks, fn)
-end
-
 local wasOptionsWindow = false
 local isOptionsWindow = false
-sdlext.addFrameDrawnHook(function(screen)
+modApi.events.frameDrawn:subscribe(function(screen)
 	if wasOptionsWindow and not isOptionsWindow then
 		-- Settings window was visible, but isn't anymore.
 		-- This also triggers when the player hovers over
@@ -196,9 +66,7 @@ sdlext.addFrameDrawnHook(function(screen)
 		Settings = modApi:loadSettings()
 
 		if not compare_tables(oldSettings, Settings) then
-			for i, hook in ipairs(settingsChangedHooks) do
-				hook(oldSettings, Settings)
-			end
+			modApi.events.settingsChanged:fire(oldSettings, Settings)
 		end
 	end
 
@@ -218,7 +86,7 @@ local function adjustForGameVersion()
 	end
 end
 
-sdlext.addWindowVisibleHook(function(screen, x, y, w, h)
+modApi.events.windowVisible:subscribe(function(screen, x, y, w, h)
 	if
 		(w == optionsBox.w and h == optionsBox.h) or
 		(w == profileBox.w and h == profileBox.h)
@@ -227,22 +95,16 @@ sdlext.addWindowVisibleHook(function(screen, x, y, w, h)
 	end
 end)
 
-sdlext.addPreKeyDownHook(function(keycode)
+modApi.events.preKeyDown:subscribe(function(keycode)
 	if keycode == SDLKeycodes.SHIFT_LEFT or keycode == SDLKeycodes.SHIFT_RIGHT then
 		isShiftHeld = true
-		for _, hook in ipairs(shiftToggledHooks) do
-			hook(isShiftHeld)
-		end
+		modApi.events.shiftToggled:fire(isShiftHeld)
 	elseif keycode == SDLKeycodes.ALT_LEFT or keycode == SDLKeycodes.ALT_RIGHT then
 		isAltHeld = true
-		for _, hook in ipairs(altToggledHooks) do
-			hook(isAltHeld)
-		end
+		modApi.events.altToggled:fire(isAltHeld)
 	elseif keycode == SDLKeycodes.CTRL_LEFT or keycode == SDLKeycodes.CTRL_RIGHT then
 		isCtrlHeld = true
-		for _, hook in ipairs(ctrlToggledHooks) do
-			hook(isCtrlHeld)
-		end
+		modApi.events.ctrlToggled:fire(isCtrlHeld)
 	end
 
 	-- don't process other keypresses while the console is open
@@ -265,22 +127,16 @@ sdlext.addPreKeyDownHook(function(keycode)
 	return false
 end)
 
-sdlext.addPreKeyUpHook(function(keycode)
+modApi.events.preKeyUp:subscribe(function(keycode)
 	if keycode == SDLKeycodes.SHIFT_LEFT or keycode == SDLKeycodes.SHIFT_RIGHT then
 		isShiftHeld = false
-		for _, hook in ipairs(shiftToggledHooks) do
-			hook(isShiftHeld)
-		end
+		modApi.events.shiftToggled:fire(isShiftHeld)
 	elseif keycode == SDLKeycodes.ALT_LEFT or keycode == SDLKeycodes.ALT_RIGHT then
 		isAltHeld = false
-		for _, hook in ipairs(altToggledHooks) do
-			hook(isAltHeld)
-		end
+		modApi.events.altToggled:fire(isAltHeld)
 	elseif keycode == SDLKeycodes.CTRL_LEFT or keycode == SDLKeycodes.CTRL_RIGHT then
 		isCtrlHeld = false
-		for _, hook in ipairs(ctrlToggledHooks) do
-			hook(isCtrlHeld)
-		end
+		modApi.events.ctrlToggled:fire(isCtrlHeld)
 	end
 	
 	-- don't process other keypresses while the console is open
@@ -291,7 +147,7 @@ sdlext.addPreKeyUpHook(function(keycode)
 	return false
 end)
 
-sdlext.addSettingsChangedHook(function(old, new)
+modApi.events.settingsChanged:subscribe(function(old, new)
 	-- When deleting the currently active profile, last_profile is nil
 	-- Just copy it over from the previous table, since it holds the correct value
 	if not new.last_profile or new.last_profile == "" then
@@ -304,7 +160,7 @@ sdlext.addSettingsChangedHook(function(old, new)
 	end
 end)
 
-sdlext.addGameWindowResizedHook(function(screen, oldSize)
+modApi.events.gameWindowResized:subscribe(function(screen, oldSize)
 	sdlext.getUiRoot():widthpx(screen:w()):heightpx(screen:h())
 end)
 
@@ -362,12 +218,8 @@ local function buildUiRoot(screen)
 	srfBotLeft = sdlext.getSurface({ path = "img/ui/tooltipshadow_0.png" })
 	srfTopRight = sdlext.getSurface({ path = "img/ui/tooltipshadow_4.png" })
 
-	for i, hook in ipairs(uiRootCreatedHooks) do
-		hook(screen, uiRoot)
-	end
-
-	-- clear the list of hooks since we're not gonna call it again
-	uiRootCreatedHooks = nil
+	modApi.events.uiRootCreated:fire(screen, uiRoot)
+	modApi.events.uiRootCreated:unsubscribeAll()
 end
 
 local isTestMech = false
@@ -387,10 +239,8 @@ MOD_API_DRAW_HOOK = sdl.drawHook(function(screen)
 
 	if not initialLoadingFinishedHookFired and bgRobot:wasDrawn() then
 		initialLoadingFinishedHookFired = true
-		for _, hook in ipairs(initialLoadingFinishedHooks) do
-			hook()
-		end
-		initialLoadingFinishedHooks = nil
+		modApi.events.initialLoadingFinished:fire()
+		modApi.events.initialLoadingFinished:unsubscribeAll()
 	end
 
 	-- ////////////////////////////////////////////////////////
@@ -405,40 +255,26 @@ MOD_API_DRAW_HOOK = sdl.drawHook(function(screen)
 		lastScreenSize.y ~= screen:h()
 	then
 		local oldSize = copy_table(lastScreenSize)
-		for i, hook in ipairs(gameWindowResizedHooks) do
-			hook(screen, oldSize)
-		end
+		modApi.events.gameWindowResized:fire(screen, oldSize)
 
 		lastScreenSize.x = screen:w()
 		lastScreenSize.y = screen:h()
 	end
 
 	if wasMainMenu and not isInMainMenu then
-		for i, hook in ipairs(mainMenuExitedHooks) do
-			hook(screen)
-		end
+		modApi.events.mainMenuExited:fire(screen)
 	elseif wasHangar and not isInHangar then
-		for i, hook in ipairs(hangarExitedHooks) do
-			hook(screen)
-		end
+		modApi.events.hangarExited:fire(screen)
 	elseif wasGame and not isInGame then
-		for i, hook in ipairs(gameExitedHooks) do
-			hook(screen)
-		end
+		modApi.events.gameExited:fire(screen)
 	end
 
 	if not wasMainMenu and isInMainMenu then
-		for i, hook in ipairs(mainMenuEnteredHooks) do
-			hook(screen, wasHangar, wasGame)
-		end
+		modApi.events.mainMenuEntered:fire(screen, wasHangar, wasGame)
 	elseif not wasHangar and isInHangar then
-		for i, hook in ipairs(hangarEnteredHooks) do
-			hook(screen)
-		end
+		modApi.events.hangarEntered:fire(screen)
 	elseif not wasGame and isInGame then
-		for i, hook in ipairs(gameEnteredHooks) do
-			hook(screen)
-		end
+		modApi.events.gameEntered:fire(screen)
 	end
 
 	if wasTestMech and not isTestMech then
@@ -461,16 +297,12 @@ MOD_API_DRAW_HOOK = sdl.drawHook(function(screen)
 
 	rect_set(sdlext.CurrentWindowRect, wx, wy, ww, wh)
 	if wx ~= nil then
-		for i, hook in ipairs(windowVisibleHooks) do
-			hook(screen, wx, wy, ww, wh)
-		end
+		modApi.events.windowVisible:fire(screen, wx, wy, ww, wh)
 	end
 
 	uiRoot:draw(screen)
 
-	for i, hook in ipairs(frameDrawnHooks) do
-		hook(screen)
-	end
+	modApi.events.frameDrawn:fire(screen)
 
 	if not loading:wasDrawn() then
 		screen:blit(cursor, nil, sdl.mouse.x(), sdl.mouse.y())
@@ -481,15 +313,11 @@ local function evaluateConsoleToggled(keycode)
 	if keycode == SDLKeycodes.BACKQUOTE then
 		consoleOpen = not consoleOpen
 
-		for _, hook in ipairs(consoleToggledHooks) do
-			hook(consoleOpen)
-		end
+		modApi.events.consoleToggled:fire(consoleOpen)
 	elseif consoleOpen and sdlext.isShiftDown() and (keycode == SDLKeycodes.RETURN or keycode == SDLKeycodes.RETURN2) then
 		consoleOpen = false
 
-		for _, hook in ipairs(consoleToggledHooks) do
-			hook(consoleOpen)
-		end
+		modApi.events.consoleToggled:fire(consoleOpen)
 	end
 end
 
@@ -498,38 +326,34 @@ MOD_API_EVENT_HOOK = sdl.eventHook(function(event)
 	local keycode = event:keycode()
 
 	if type == sdl.events.keydown then
-		for i, hook in ipairs(preKeyDownHooks) do
-			if hook(keycode) then
-				return true
-			end
+		local eventHandled = modApi.events.preKeyDown:fire(keycode)
+		if eventHandled then
+			return true
 		end
 	elseif type == sdl.events.keyup then
-		for i, hook in ipairs(preKeyUpHooks) do
-			if hook(keycode) then
-				return true
-			end
+		local eventHandled = modApi.events.preKeyUp:fire(keycode)
+		if eventHandled then
+			return true
 		end
 	end
 
-	local result = uiRoot:event(event)
+	local uiEventHandled = uiRoot:event(event)
 
-	if not result then
+	if not uiEventHandled then
 		if type == sdl.events.keydown then
-			for i, hook in ipairs(postKeyDownHooks) do
-				if hook(keycode) then
-					return true
-				end
+			local eventHandled = modApi.events.postKeyDown:fire(keycode)
+			if eventHandled then
+				return true
 			end
 
 			evaluateConsoleToggled(keycode)
 		elseif type == sdl.events.keyup then
-			for i, hook in ipairs(postKeyUpHooks) do
-				if hook(keycode) then
-					return true
-				end
+			local eventHandled = modApi.events.postKeyUp:fire(keycode)
+			if eventHandled then
+				return true
 			end
 		end
 	end
 
-	return result
+	return uiEventHandled
 end)

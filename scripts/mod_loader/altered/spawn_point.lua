@@ -64,7 +64,7 @@ local function addSpawnData(self, location, type, id, age)
 
 	if self.Initialized then
 		-- Don't trigger the hooks when missions become available
-		modApi:fireVekSpawnAddedHooks(self, el)
+		modApi.hooks.vekSpawnAdded:fire(self, el)
 	end
 end
 

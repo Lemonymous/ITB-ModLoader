@@ -28,8 +28,17 @@ local oldTriggerVoice = TriggerVoiceEvent
 function TriggerVoiceEvent(event, custom_odds)
 	local suppress = false
 
-	for i, hook in ipairs(modApi.voiceEventHooks) do
-		suppress = suppress or hook(event, custom_odds, suppress)
+	-- This hook requires some custom logic regarding handling of arguments,
+	-- so we forego calling Event:fire() and process it manually
+	local snapshot = shallow_copy(modApi.hooks.voiceEvent.subscribers)
+	for _, sub in ipairs(snapshot) do
+		local ok, retErr = pcall(function() return sub.fn(event, custom_odds, suppress) end)
+
+		if ok then
+			suppress = suppress or retErr
+		else
+			modApi.hooks.voiceEvent:handleError(retErr)
+		end
 	end
 
 	if not suppress then
@@ -39,11 +48,11 @@ end
 
 local oldCreateIncidents = createIncidents
 function createIncidents(corporation, island)
-	modApi:firePreIslandSelectionHooks(corporation, island)
+	modApi.hooks.preIslandSelection:fire(corporation, island)
 
 	oldCreateIncidents(corporation, island)
 
-	modApi:firePostIslandSelectionHooks(corporation, island)
+	modApi.hooks.postIslandSelection:fire(corporation, island)
 end
 
 -- ///////////////////////////////////////////////////////////////////
@@ -67,7 +76,7 @@ local function overrideNextPhase()
 			local nextMission = _G[nxtId]
 			nextMission.ID = nxtId
 
-			modApi:fireMissionNextPhaseCreatedHooks(prevMission, nextMission)
+			modApi.hooks.missionNextPhaseCreated:fire(prevMission, nextMission)
 		end
 	end
 end
@@ -91,7 +100,7 @@ function startNewGame()
 	local modOptions = mod_loader:getCurrentModContent()
 	local savedOrder = mod_loader:getCurrentModOrder()
 
-	modApi:firePreStartGameHooks()
+	modApi.hooks.preStartGame:fire()
 
 	oldStartNewGame()
 
@@ -116,7 +125,7 @@ function startNewGame()
 		RestoreGameVariables(Settings)
 		-- Execute hook in the deferred callback, since we want
 		-- postStartGameHook to have access to the savegame data
-		modApi:firePostStartGameHooks()
+		modApi.hooks.postStartGame:fire()
 	end)
 end
 
@@ -135,7 +144,7 @@ function LoadGame()
 		end
 	end
 
-	modApi:firePreLoadGameHooks()
+	modApi.hooks.preLoadGame:fire()
 
 	GAME.CreateNextPhase = nil
 
@@ -149,7 +158,7 @@ function LoadGame()
 		SetDifficulty(GAME.CustomDifficulty)
 	end
 
-	modApi:firePostLoadGameHooks()
+	modApi.hooks.postLoadGame:fire()
 	
 	modApi:runLater(function(mission)
 		mission.Board = Board
@@ -158,7 +167,7 @@ end
 
 local oldSaveGame = SaveGame
 function SaveGame()
-	modApi:fireSaveGameHooks()
+	modApi.hooks.saveGame:fire()
 
 	if Game and GameData then
 		-- Reload the save, since sometimes the savefile

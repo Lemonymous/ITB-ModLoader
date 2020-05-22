@@ -357,7 +357,7 @@ function ArrangePilots()
 	createUi()
 end
 
-sdlext.addHangarEnteredHook(function(screen)
+modApi.events.hangarEntered:subscribe(function(screen)
 	if updateImmediately then
 		updateImmediately = false
 		arrangePilotsButton.tip = GetText("PilotArrange_ButtonTooltip_Off")

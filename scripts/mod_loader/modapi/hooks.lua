@@ -1,83 +1,8 @@
 
--- //////////////////////////////////////////////////////////////////////////////
--- Simple hooks
-
-modApi.hooks = {}
-
-function modApi:AddHook(name)
-	local Name = name:gsub("^.", string.upper) -- capitalize first letter
-	local name = name:gsub("^.", string.lower) -- lower case first letter
-
-	table.insert(self.hooks, name)
-	self[name .."Hooks"] = {}
-
-	self["add".. Name .."Hook"] = function(self, fn)
-		assert(type(fn) == "function")
-		table.insert(self[name .."Hooks"], fn)
-	end
-
-	self["rem".. Name .."Hook"] = function(self, fn)
-		remove_element(fn, self[name .."Hooks"])
-	end
-
-	self["fire".. Name .."Hooks"] = function(self, ...)
-		for _, fn in ipairs(self[name .."Hooks"]) do
-			fn(...)
-		end
-	end
-end
-
--- hooks in this list do not reset when other hooks reset
-local persistentHooks = {
-	modsFirstLoaded = true,
-	modsInitialized = true
-}
 function modApi:ResetHooks()
-	for _, name in ipairs(self.hooks) do
-		if not persistentHooks[name] then
-			self[name .."Hooks"] = {}
-		end
+	for _, event in pairs(self.hooks) do
+		event:unsubscribeAll()
 	end
-end
-
-local hooks = {
-	"PreMissionAvailable",
-	"PostMissionAvailable",
-	"PreEnvironment",
-	"PostEnvironment",
-	"NextTurn",
-	"VoiceEvent",
-	"PreIslandSelection",
-	"PostIslandSelection",
-	"MissionUpdate",
-	"MissionStart",
-	"MissionEnd",
-	"MissionNextPhaseCreated",
-	"PreStartGame",
-	"PostStartGame",
-	"PreLoadGame",
-	"PostLoadGame",
-	"SaveGame",
-	"VekSpawnAdded",
-	"VekSpawnRemoved",
-	"PreprocessVekRetreat",
-	"ProcessVekRetreat",
-	"PostprocessVekRetreat",
-	"ModsLoaded",
-	"ModsFirstLoaded",
-	"ModsInitialized",
-	"TestMechEntered",
-	"TestMechExited",
-	"SaveDataUpdated",
-}
-
-for _, name in ipairs(hooks) do
-	modApi:AddHook(name)
-end
-
--- backwards compatibility.
-function modApi:addMissionAvailableHook(fn)
-	self:addPostMissionAvailableHook(fn)
 end
 
 -- //////////////////////////////////////////////////////////////////////////////
@@ -204,6 +129,6 @@ function modApi:updateScheduledHooks()
 	end
 end
 
-sdlext.addGameExitedHook(function()
+modApi.events.gameExited:subscribe(function()
 	modApi.runLaterQueue = {}
 end)

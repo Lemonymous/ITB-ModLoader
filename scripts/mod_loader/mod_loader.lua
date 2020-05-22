@@ -1,5 +1,3 @@
-mod_loader = {}
-
 Logger = require("scripts/mod_loader/logger")
 local ScrollableLogger = require("scripts/mod_loader/logger_scrollable")
 
@@ -25,16 +23,6 @@ end
 
 function LOGF(...)
 	LOG(string.format(...))
-end
-
--- fires a list of hooks, catching and logging errors
-local function fireHooksSafely(hooks, errorMsg)
-	for i, hook in ipairs(hooks) do
-		local ok, err = pcall(function() hook() end)
-		if not ok then
-			LOG(errorMsg, err)
-		end
-	end
 end
 
 function mod_loader:init()
@@ -75,17 +63,18 @@ function mod_loader:init()
 		self:initMod(id)
 	end
 
-	fireHooksSafely(modApi.modsInitializedHooks, "A modsInitializedHook failed: ")
-	modApi.modsInitializedHooks = nil
+	modApi.events.modsInitialized:fire()
+	modApi.events.modsInitialized:unsubscribeAll()
 	
 	modApi:finalize()
 
 	self:loadPilotList()
 	modApi:affirmProfileData()
 
-	sdlext.addInitialLoadingFinishedHook(function()
+	modApi.events.initialLoadingFinished:subscribe(function()
 		self:loadModContent(self:getModConfig(), self:getSavedModOrder())
-		fireHooksSafely(modApi.modsFirstLoadedHooks, "A modsFirstLoaded hook failed: ")
+		modApi.events.modsFirstLoaded:fire()
+		modApi.events.modsFirstLoaded:unsubscribeAll()
 	end)
 end
 
@@ -484,7 +473,7 @@ function mod_loader:loadModContent(mod_options,savedOrder)
 		end
 	end
 
-	fireHooksSafely(modApi.modsLoadedHooks, "A modsLoadedHook failed: ")
+	modApi.events.modsLoaded:fire()
 end
 
 function mod_loader:loadPilotList()

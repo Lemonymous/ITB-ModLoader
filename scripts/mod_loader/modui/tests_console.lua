@@ -441,16 +441,16 @@ local function createOpenTestingConsoleButton(root)
 		Ui.draw(self, screen)
 	end
 
-	sdlext.addSettingsChangedHook(function()
+	modApi.events.settingsChanged:subscribe(function()
 		button:pospx(calculateOpenTestingConsoleButtonPosition())
 	end)
 
-	sdlext.addGameWindowResizedHook(function()
+	modApi.events.gameWindowResized:subscribe(function()
 		button:pospx(calculateOpenTestingConsoleButtonPosition())
 	end)
 end
 
-sdlext.addUiRootCreatedHook(function(screen, root)
+modApi.events.uiRootCreated:subscribe(function(screen, root)
 	resetEvent = Event()
 	createOpenTestingConsoleButton(root)
 end)

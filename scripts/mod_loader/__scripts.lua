@@ -3,6 +3,9 @@ local scripts = {
 	
 	"classes",
 
+	"modapi/event",
+	"setup",
+
 	"sdlext/serialize",
 	"sdlext/extensions",
 	"sdlext/keycode_lookup",

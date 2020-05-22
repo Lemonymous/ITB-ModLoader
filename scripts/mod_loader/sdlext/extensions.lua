@@ -67,8 +67,6 @@ local function checkResource()
 	end
 end
 
-sdlext = {}
-
 function sdlext.font(path,size)
 	checkResource()
 	checkGC()

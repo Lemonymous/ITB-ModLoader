@@ -39,7 +39,9 @@ function Subscription:isClosed()
 	return self.event == nil
 end
 
------------------------------------------
+-- ///////////////////////////////////////////////////////////////////////////////
+-- ///////////////////////////////////////////////////////////////////////////////
+
 --[[
 	Event class that allows to easily create events - or 'hooks', as we tend to call them.
 
@@ -159,6 +161,15 @@ end
 local function pack2(...) return {n=select('#', ...), ...} end
 local function unpack2(t) return unpack(t, 1, t.n) end
 
+function Event:handleError(err)
+	if isStackOverflowError(err) then
+		error(err)
+	else
+		LOG("An event callback failed: ", err)
+		error(err)
+	end
+end
+
 --[[
 	Fires this event, notifying all subscribers and passing all arguments
 	that have been passed to this function to them.
@@ -173,11 +184,29 @@ function Event:fire(...)
 		local ok, err = pcall(function() sub.fn(unpack2(args)) end)
 
 		if not ok then
-			if isStackOverflowError(err) then
-				error(err)
-			else
-				LOG("An event callback failed: ", err)
-			end
+			self:handleError(err)
 		end
 	end
+end
+
+-- ///////////////////////////////////////////////////////////////////////////////
+-- ///////////////////////////////////////////////////////////////////////////////
+
+InputEvent = Event:extend()
+function InputEvent:fire(...)
+	local args = pack2(...)
+	local snapshot = shallow_copy(self.subscribers)
+	for _, sub in ipairs(snapshot) do
+		local ok, retErr = pcall(function() return sub.fn(unpack2(args)) end)
+
+		if ok then
+			if retErr then
+				return true
+			end
+		else
+			self:handleError(retErr)
+		end
+	end
+
+	return false
 end
