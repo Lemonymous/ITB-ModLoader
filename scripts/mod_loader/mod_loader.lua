@@ -123,6 +123,18 @@ function mod_loader:loadAdditionalSprites()
 	
 	ANIMS.placeholder_mech = ANIMS.SingleImage:new{Image = "units/placeholder_mech.png"}
 	ANIMS.placeholder_enemy = ANIMS.SingleImage:new{Image = "units/placeholder_enemy.png"}
+	
+	local vanillaIslands = {
+		"grass",
+		"desert",
+		"snow",
+		"factory",
+		--"volcano" -- this island is an outlier and would require additional logic to be included
+	}
+	
+	for i, id in ipairs(vanillaIslands) do
+		modApi:copyIslandAssets(tostring(i-1), id)
+	end
 end
 
 function mod_loader:enumerateMods(dirPathRelativeToGameDir)
