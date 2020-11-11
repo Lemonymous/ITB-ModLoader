@@ -100,6 +100,24 @@ function template_island:getId()
 	return self.id
 end
 
+function template_island:setCorporation(corpOrIdOrIslandNumber)
+	AssertMultiple({'table', 'string', 'number'}, type(corpOrIdOrIslandNumber), "setCorporation - Arg#1 (Corp, id or island number")
+	
+	local corp = corpOrIdOrIslandNumber
+	
+	if type(corp) == 'table' then
+		assert(corp.isCorporationClass, "setCorporation - Arg#1: Table is not a valid corporation")
+	else
+		corp = modApi:getCorporation(corp)
+	end
+	
+	self.corp = corp:getId()
+end
+
+function template_island:getCorporation()
+	return self.corp and modApi:getCorporation(self.corp) or nil
+end
+
 function template_island:copyAssets(island_id)
 	AssertEntryExists(modApi.islands, island_id, "Island", "copyAssets - Arg#1 (island id)")
 	
@@ -203,6 +221,10 @@ function modApi:setIsland(islandNumber, island)
 	
 	modApi:copyIslandAssets(island.id, tostring(n))
 	
+	if island.corp ~= nil then
+		modApi:setCorporation(islandNumber, island.corp)
+	end
+	
 	Islands[islandNumber] = island
 end
 
@@ -227,6 +249,8 @@ for i, id in ipairs(vanillaIslands) do
 		for k = 0, 7 do
 			table.insert(island.network, _G["Network_Island_".. n][tostring(k)])
 		end
+		
+		island:setCorporation(i)
 	end
 	
 	-- Island assets will be copied in mod_loader.loadAdditionalSprites
