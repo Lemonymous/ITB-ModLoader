@@ -104,7 +104,7 @@ local function AssertResourcesDatExists(msg)
 	assert(modApi.resource ~= nil, msg .. "Resource.dat is closed. It can only be modified while mods are initializing")
 end
 
-local template_tileset = {}
+local template_tileset = { isTilesetClass = true }
 
 function template_tileset:getId()
 	return self.id

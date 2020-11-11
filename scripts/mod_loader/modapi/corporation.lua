@@ -74,6 +74,7 @@ local function AssertEntryExists(tbl, entry, name, msg)
 end
 
 local template_corp = Corp_Default
+template_corp.isCorporationClass = true
 template_corp.id = "Corp_Default"
 template_corp.Environment = "Unremarkable"
 template_corp.Description = "This is a non-descript default corporation"
