@@ -211,8 +211,8 @@ function modApi:copyTilesetAssets(from, to)
 	AssertResourcesDatExists("copyTilesetAssets")
 	AssertEquals('string', type(from), "Arg#1")
 	AssertEquals('string', type(to), "Arg#2")
-	assert(string.find(from, "[/\]") == nil, "copyTilesetAssets - Arg#1: Expected directory name without '\\' and '/', was ".. from)
-	assert(string.find(to, "[/\]") == nil, "copyTilesetAssets - Arg#2: Expected directory name without '\\' and '/', was ".. to)
+	assert(string.find(from, "[/\\]") == nil, "copyTilesetAssets - Arg#1: Expected directory name without '\\' and '/', was ".. from)
+	assert(string.find(to, "[/\\]") == nil, "copyTilesetAssets - Arg#2: Expected directory name without '\\' and '/', was ".. to)
 	
 	local root = "img/combat/"
 	
@@ -309,7 +309,6 @@ end
 
 GetDifficulty = oldGetDifficulty
 
-local oldGetRainChance = getRainChance
 function getRainChance(sectorType)
 	local tileset = modApi:getTileset(sectorType)
 	
