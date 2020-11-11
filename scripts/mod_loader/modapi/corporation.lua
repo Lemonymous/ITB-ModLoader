@@ -83,10 +83,10 @@ function template_corp:getId()
 	return self.id
 end
 
-function template_corp:setEnvironment(env_id)
-	AssertEquals('string', type(env_id), "setTileset - Arg#1 (Corporation environment id)")
+function template_corp:setEnvironment(name)
+	AssertEquals('string', type(name), "setEnvironment - Arg#1 (Corporation environment name)")
 	
-	self.Environment = env_id
+	self.Environment = name
 end
 
 function template_corp:getEnvironment()
