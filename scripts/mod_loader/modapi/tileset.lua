@@ -106,6 +106,8 @@ end
 
 local template_tileset = { isTilesetClass = true }
 
+CreateClass(template_tileset)
+
 function template_tileset:getId()
 	return self.id
 end
@@ -194,8 +196,6 @@ function template_tileset:setTilesetIcon(filePath)
 	
 	modApi:appendAsset(string.format("img/strategy/corp/%s_env.png", self:getId()), getModFilePathRelativeToGameDir(filePath))
 end
-
-CreateClass(template_tileset)
 
 local vanillaTilesets = {
 	"grass",
