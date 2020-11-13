@@ -48,12 +48,12 @@ local function AssertEntryExists(tbl, entry, name, msg)
 end
 
 function shuffle_list(list)
-    for i = #list, 2, -1 do
-        local j = math.random(1, i)
+	for i = #list, 2, -1 do
+		local j = math.random(1, i)
 		
 		-- swap entries
-        list[i], list[j] = list[j], list[i]
-    end
+		list[i], list[j] = list[j], list[i]
+	end
 end
 
 local template_enemyList = {
@@ -144,7 +144,6 @@ function template_enemyList:pickEnemies(islandNumber, timesPicked)
 				choice = enemyChoices[i]
 				table.remove(enemyChoices, i)
 				
-				addExclusions(choice)
 				break
 			end
 		end
