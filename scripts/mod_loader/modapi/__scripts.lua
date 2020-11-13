@@ -15,6 +15,7 @@ local scripts = {
 	"squad",
 	"tileset",
 	"corporation",
+	"enemyList",
 	"island",
 	"drops",
 	"difficulty",

@@ -96,8 +96,28 @@ local Island_Shifts = {
 
 local template_island = { isIslandClass = true }
 
+CreateClass(template_island)
+
 function template_island:getId()
 	return self.id
+end
+
+function template_island:setEnemyList(enemyListOrIdOrIslandNumber)
+	AssertMultiple({'table', 'string', 'number'}, type(enemyListOrIdOrIslandNumber), "setEnemyList - Arg#1 (Enemy list, id or island number)")
+	
+	local enemyList = enemyListOrIdOrIslandNumber
+	
+	if type(enemyList) == 'table' then
+		assert(enemyList.isEnemyListClass, "setEnemyList - Arg#1: Table is not a valid enemyList")
+	else
+		enemyList = modApi:getEnemyList(enemyList)
+	end
+	
+	self.enemyList = enemyList:getId()
+end
+
+function template_island:getEnemyList()
+	return type(self.enemyList) == 'string' and modApi:getEnemyList(self.enemyList) or nil
 end
 
 function template_island:setCorporation(corpOrIdOrIslandNumber)
@@ -127,8 +147,6 @@ function template_island:copyAssets(island_id)
 	
 	modApi:copyIslandAssets(island_id, self:getId())
 end
-
-CreateClass(template_island)
 
 modApi.islands = {}
 
@@ -177,7 +195,7 @@ function modApi:getIsland(islandNumberOrIslandId)
 	
 	if type(islandNumberOrIslandId) == 'number' then
 		local islandNumber = islandNumberOrIslandId
-		AssertRange(1, 4, islandNumber, "getIsland - Arg#1 (Island number)")
+		AssertRange(1, 5, islandNumber, "getIsland - Arg#1 (Island number)")
 		
 		return Islands[islandNumber]
 		
@@ -191,7 +209,7 @@ end
 
 function modApi:setIsland(islandNumber, island)
 	AssertEquals('number', type(islandNumber), "setIsland - Arg#1 (Island number)")
-	AssertRange(1, 4, islandNumber, "setIsland - Arg#1 (Island Number)")
+	AssertRange(1, 5, islandNumber, "setIsland - Arg#1 (Island Number)")
 	AssertMultiple({'table', 'string'}, type(island), "setIsland - Arg#2 (Island)")
 	
 	if type(island) == 'string' then
@@ -252,6 +270,8 @@ for i, id in ipairs(vanillaIslands) do
 		
 		island:setCorporation(i)
 	end
+	
+	island:setEnemyList(id)
 	
 	-- Island assets will be copied in mod_loader.loadAdditionalSprites
 	--modApi:copyIslandAssets(tostring(n), id)
