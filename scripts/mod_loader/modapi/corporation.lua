@@ -156,15 +156,16 @@ function modApi:newCorporation(id, base)
 	end
 	
 	modApi.corporations[id] = (base or template_corp):new{ id = id }
+	local corp = modApi.corporations[id]
 	
-	-- create unique copies of all tables from the templates
-	for i, v in pairs(modApi.corporations[id]) do
-		if type(v) == 'table' then
-			modApi.corporations[id][i] = shallow_copy(v)
+	-- create unique copies of all tables in default template
+	for i, _ in pairs(template_corp) do
+		if i ~= '__index' then
+			corp[i] = shallow_copy(corp[i])
 		end
 	end
 	
-	return modApi.corporations[id]
+	return corp
 end
 
 function modApi:getCorporation(islandNumberOrCorpId)
