@@ -76,7 +76,6 @@ end
 local template_corp = Corp_Default
 template_corp.isCorporationClass = true
 template_corp.id = "Corp_Default"
-template_corp.Environment = "Unremarkable"
 template_corp.Description = "This is a non-descript default corporation"
 template_corp.Bark_Name = "Default"
 
@@ -205,7 +204,7 @@ function modApi:setCorporation(islandNumber, corp)
 	
 	modApi.modLoaderDictionary[vanilla_corp .."_CEO_Name"] = corp.CEO_Name
 	modApi.modLoaderDictionary[vanilla_corp .."_Name"] = corp.Name
-	modApi.modLoaderDictionary[vanilla_corp .."_Environment"] = corp.Environment
+	modApi.modLoaderDictionary[vanilla_corp .."_Environment"] = modApi:getTileset(corp.Tileset).climate
 	modApi.modLoaderDictionary[vanilla_corp .."_Description"] = corp.Description
 	modApi.modLoaderDictionary[vanilla_corp .."_Bark"] = corp.Bark_Name
 end
@@ -223,7 +222,6 @@ for _, corp_id in ipairs(vanillaCorporations) do
 	
 	corp.CEO_Name = Mission_Texts[corp_id .."_CEO_Name"] or base.CEO_Name or ""
 	corp.Name = Mission_Texts[corp_id .."_Name"] or base.Name or ""
-	corp.Environment = Mission_Texts[corp_id .."_Environment"] or base.Environment or ""
 	corp.Description = Global_Texts[corp_id .."_Description"] or base.Description or ""
 	
 	-- update actual corp

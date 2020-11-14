@@ -104,7 +104,10 @@ local function AssertResourcesDatExists(msg)
 	assert(modApi.resource ~= nil, msg .. "Resource.dat is closed. It can only be modified while mods are initializing")
 end
 
-local template_tileset = { isTilesetClass = true }
+local template_tileset = {
+	isTilesetClass = true,
+	climate = "Not defined"
+}
 
 CreateClass(template_tileset)
 
@@ -197,14 +200,25 @@ function template_tileset:setTilesetIcon(filePath)
 	modApi:appendAsset(string.format("img/strategy/corp/%s_env.png", self:getId()), getModFilePathRelativeToGameDir(filePath))
 end
 
-local vanillaTilesets = {
-	"grass",
-	"sand",
-	"snow",
-	"acid",
-	"lava",
-	"volcano"
-}
+function template_tileset:appendAssets()
+	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
+	local tilePath = self:getTilePath()
+	local files = mod_loader:enumerateFilesIn(modPath .. tilePath)
+	local images = {}
+	
+	for _, file in ipairs(files) do
+		if modApi:stringEndsWith(file, ".png") then
+			if file == "env.png" then
+				self:setTilesetIcon(tilePath .. file)
+			else
+				table.insert(images, file:sub(1, -5))
+			end
+		end
+	end
+	
+	self:addTiles(images)
+end
+
 modApi.tilesets = {}
 
 function modApi:copyTilesetAssets(from, to)
@@ -267,6 +281,22 @@ function modApi:getTileset(id)
 	return modApi.tilesets[id]
 end
 
+local vanillaTilesets = {
+	"grass",
+	"sand",
+	"snow",
+	"acid",
+	"lava",
+	"volcano"
+}
+
+local vanillaCorporations = {
+	"Corp_Grass",
+	"Corp_Desert",
+	"Corp_Snow",
+	"Corp_Factory"
+}
+
 local difficulties = {
 	DIFF_EASY,
 	DIFF_NORMAL,
@@ -288,8 +318,13 @@ function GetDifficulty()
 end
 
 -- add vanilla tilesets
-for _, tileset_id in ipairs(vanillaTilesets) do
+for i, tileset_id in ipairs(vanillaTilesets) do
 	local tileset = modApi:newTileset(tileset_id)
+	
+	local corp = vanillaCorporations[i]
+	if corp then
+		tileset.climate = Mission_Texts[corp .."_Environment"] or template_tileset.climate
+	end
 	
 	-- extract rainChance from vanilla function
 	tileset.rainChance = getRainChance(tileset_id)
