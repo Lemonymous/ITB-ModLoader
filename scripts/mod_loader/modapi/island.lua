@@ -94,12 +94,75 @@ local Island_Shifts = {
 	Point(0,0)
 }
 
-local template_island = { isIslandClass = true }
+local template_island = {
+	isIslandClass = true,
+	shift = Island_Shifts[1],
+	magic = Island_Magic[1],
+	data = {
+		Region_Data["island_0_0"],
+		Region_Data["island_0_1"],
+		Region_Data["island_0_2"],
+		Region_Data["island_0_3"],
+		Region_Data["island_0_4"],
+		Region_Data["island_0_5"],
+		Region_Data["island_0_6"],
+		Region_Data["island_0_7"]
+	},
+	network = {
+		Network_Island_0["0"],
+		Network_Island_0["1"],
+		Network_Island_0["2"],
+		Network_Island_0["3"],
+		Network_Island_0["4"],
+		Network_Island_0["5"],
+		Network_Island_0["6"],
+		Network_Island_0["7"]
+	}
+}
 
 CreateClass(template_island)
 
 function template_island:getId()
 	return self.id
+end
+
+function template_island:getPaths()
+	local id = self:getId()
+	
+	return {
+		["island"] = string.format("island%s", id),
+		["island1x"] = string.format("island1x_%s", id),
+		["island1x_out"] = string.format("island1x_%s_out", id),
+		["islands/island_0"] = string.format("islands/island_%s_0", id),
+		["islands/island_1"] = string.format("islands/island_%s_1", id),
+		["islands/island_2"] = string.format("islands/island_%s_2", id),
+		["islands/island_3"] = string.format("islands/island_%s_3", id),
+		["islands/island_4"] = string.format("islands/island_%s_4", id),
+		["islands/island_5"] = string.format("islands/island_%s_5", id),
+		["islands/island_6"] = string.format("islands/island_%s_6", id),
+		["islands/island_7"] = string.format("islands/island_%s_7", id),
+		["islands/island_0_OL"] = string.format("islands/island_%s_0_OL", id),
+		["islands/island_1_OL"] = string.format("islands/island_%s_1_OL", id),
+		["islands/island_2_OL"] = string.format("islands/island_%s_2_OL", id),
+		["islands/island_3_OL"] = string.format("islands/island_%s_3_OL", id),
+		["islands/island_4_OL"] = string.format("islands/island_%s_4_OL", id),
+		["islands/island_5_OL"] = string.format("islands/island_%s_5_OL", id),
+		["islands/island_6_OL"] = string.format("islands/island_%s_6_OL", id),
+		["islands/island_7_OL"] = string.format("islands/island_%s_7_OL", id)
+	}
+end
+
+function template_island:getIslandPath()
+	return self.islandPath:gsub("[^/]$","%1/")
+end
+
+function template_island:setIslandPath(path)
+	AssertEquals('string', type(path), "setIslandPath - Arg#1 (folder containing island images, relative to mod root)")
+	
+	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
+	assert(modApi:directoryExists(modPath .. path), string.format("setIslandPath - Arg#1: Directory '%s' does not exist", modPath .. path))
+	
+	self.islandPath = path
 end
 
 function template_island:setEnemyList(enemyListOrIdOrIslandNumber)
@@ -148,6 +211,25 @@ function template_island:copyAssets(island_id)
 	modApi:copyIslandAssets(island_id, self:getId())
 end
 
+function template_island:appendAssets()
+	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
+	local paths = self:getPaths()
+	local islandPath = self:getIslandPath()
+	
+	local function appendAsset(to, from)
+		if modApi:fileExists(from) then
+			modApi:appendAsset(to, from)
+		end
+	end
+	
+	for from, to in pairs(paths) do
+		from = string.format("%s%s%s.png", modPath, islandPath, from)
+		to = string.format("img/strategy/%s.png", to)
+		
+		appendAsset(to, from)
+	end
+end
+
 modApi.islands = {}
 
 function modApi:copyIslandAssets(from, to)
@@ -180,7 +262,10 @@ function modApi:newIsland(id, base)
 		AssertEntryExists(modApi.islands, base.id, "Island", "newIsland - Arg#2")
 	end
 	
-	modApi.islands[id] = (base or template_island):new{ id = id }
+	modApi.islands[id] = (base or template_island):new{
+		id = id,
+		islandPath = string.format("img/strategy/", id)
+	}
 	local island = modApi.islands[id]
 	
 	if base ~= nil then
