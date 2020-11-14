@@ -83,22 +83,18 @@ function template_corp:getId()
 	return self.id
 end
 
-function template_corp:setEnvironment(name)
-	AssertEquals('string', type(name), "setEnvironment - Arg#1 (Corporation environment name)")
+function template_corp:setTileset(tilesetOrId)
+	AssertMultiple({'table', 'string'}, type(tilesetOrId), "setTileset - Arg#1 (Tileset or id")
 	
-	self.Environment = name
-end
-
-function template_corp:getEnvironment()
-	return self.Environment
-end
-
-function template_corp:setTileset(tileset_id)
-	AssertEquals('string', type(tileset_id), "setTileset - Arg#1 (Corporation tileset id)")
+	local tileset = tilesetOrId
 	
-	assert(type(modApi.tilesets[tileset_id]) == 'table', string.format("setTileset - Attempted to set tileset %q for corporation %q. Tileset does not exist", tileset_id, self:getId()))
+	if type(tileset) == 'table' then
+		assert(tileset.isTilesetClass, "setTileset - Arg#1: Table is not a valid tileset")
+	else
+		tileset = modApi:getTileset(tileset)
+	end
 	
-	self.Tileset = tileset_id
+	self.Tileset = tileset:getId()
 end
 
 function template_corp:getTileset()
