@@ -95,10 +95,10 @@ local Island_Shifts = {
 }
 
 local template_island = {
-	isIslandClass = true,
-	shift = Island_Shifts[1],
-	magic = Island_Magic[1],
-	data = {
+	IsIslandClass = true,
+	Shift = Island_Shifts[1],
+	Magic = Island_Magic[1],
+	Data = {
 		Region_Data["island_0_0"],
 		Region_Data["island_0_1"],
 		Region_Data["island_0_2"],
@@ -108,7 +108,7 @@ local template_island = {
 		Region_Data["island_0_6"],
 		Region_Data["island_0_7"]
 	},
-	network = {
+	Network = {
 		Network_Island_0["0"],
 		Network_Island_0["1"],
 		Network_Island_0["2"],
@@ -122,12 +122,12 @@ local template_island = {
 
 CreateClass(template_island)
 
-function template_island:getId()
-	return self.id
+function template_island:GetId()
+	return self.Id
 end
 
-function template_island:getPaths()
-	local id = self:getId()
+function template_island:GetPaths()
+	local id = self:GetId()
 	
 	return {
 		["island"] = string.format("island%s", id),
@@ -152,69 +152,69 @@ function template_island:getPaths()
 	}
 end
 
-function template_island:getIslandPath()
-	return self.islandPath:gsub("[^/]$","%1/")
+function template_island:GetIslandPath()
+	return self.IslandPath:gsub("[^/]$","%1/")
 end
 
-function template_island:setIslandPath(path)
-	AssertEquals('string', type(path), "setIslandPath - Arg#1 (folder containing island images, relative to mod root)")
+function template_island:SetIslandPath(path)
+	AssertEquals('string', type(path), "SetIslandPath - Arg#1 (folder containing island images, relative to mod root)")
 	
 	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	assert(modApi:directoryExists(modPath .. path), string.format("setIslandPath - Arg#1: Directory '%s' does not exist", modPath .. path))
+	assert(modApi:directoryExists(modPath .. path), string.format("SetIslandPath - Arg#1: Directory '%s' does not exist", modPath .. path))
 	
-	self.islandPath = path
+	self.IslandPath = path
 end
 
-function template_island:setEnemyList(enemyListOrIdOrIslandNumber)
-	AssertMultiple({'table', 'string', 'number'}, type(enemyListOrIdOrIslandNumber), "setEnemyList - Arg#1 (Enemy list, id or island number)")
+function template_island:SetEnemyList(enemyListOrIdOrIslandNumber)
+	AssertMultiple({'table', 'string', 'number'}, type(enemyListOrIdOrIslandNumber), "SetEnemyList - Arg#1 (Enemy list, id or island number)")
 	
 	local enemyList = enemyListOrIdOrIslandNumber
 	
 	if type(enemyList) == 'table' then
-		assert(enemyList.isEnemyListClass, "setEnemyList - Arg#1: Table is not a valid enemyList")
+		assert(enemyList.IsEnemyListClass, "SetEnemyList - Arg#1: Table is not a valid enemyList")
 	else
 		enemyList = modApi:getEnemyList(enemyList)
 	end
 	
-	self.enemyList = enemyList:getId()
+	self.EnemyList = enemyList:GetId()
 end
 
-function template_island:getEnemyList()
-	return type(self.enemyList) == 'string' and modApi:getEnemyList(self.enemyList) or nil
+function template_island:GetEnemyList()
+	return type(self.EnemyList) == 'string' and modApi:getEnemyList(self.EnemyList) or nil
 end
 
-function template_island:setCorporation(corpOrIdOrIslandNumber)
-	AssertMultiple({'table', 'string', 'number'}, type(corpOrIdOrIslandNumber), "setCorporation - Arg#1 (Corp, id or island number")
+function template_island:SetCorporation(corpOrIdOrIslandNumber)
+	AssertMultiple({'table', 'string', 'number'}, type(corpOrIdOrIslandNumber), "SetCorporation - Arg#1 (Corp, id or island number")
 	
 	local corp = corpOrIdOrIslandNumber
 	
 	if type(corp) == 'table' then
-		assert(corp.isCorporationClass, "setCorporation - Arg#1: Table is not a valid corporation")
+		assert(corp.IsCorporationClass, "SetCorporation - Arg#1: Table is not a valid corporation")
 	else
 		corp = modApi:getCorporation(corp)
 	end
 	
-	self.corp = corp:getId()
+	self.Corp = corp:GetId()
 end
 
-function template_island:getCorporation()
-	return self.corp and modApi:getCorporation(self.corp) or nil
+function template_island:GetCorporation()
+	return self.Corp and modApi:getCorporation(self.Corp) or nil
 end
 
-function template_island:copyAssets(island_id)
-	AssertEntryExists(modApi.islands, island_id, "Island", "copyAssets - Arg#1 (island id)")
+function template_island:CopyAssets(island_id)
+	AssertEntryExists(modApi.islands, island_id, "Island", "CopyAssets - Arg#1 (island id)")
 	
-	if island_id == self:getId() then
+	if island_id == self:GetId() then
 		return
 	end
 	
-	modApi:copyIslandAssets(island_id, self:getId())
+	modApi:copyIslandAssets(island_id, self:GetId())
 end
 
-function template_island:appendAssets()
+function template_island:AppendAssets()
 	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	local paths = self:getPaths()
-	local islandPath = self:getIslandPath()
+	local paths = self:GetPaths()
+	local islandPath = self:GetIslandPath()
 	
 	local function appendAsset(to, from)
 		if modApi:fileExists(from) then
@@ -259,17 +259,17 @@ function modApi:newIsland(id, base)
 		base = modApi.islands[base]
 		
 	elseif type(base) == 'table' then
-		AssertEntryExists(modApi.islands, base.id, "Island", "newIsland - Arg#2")
+		AssertEntryExists(modApi.islands, base.Id, "Island", "newIsland - Arg#2")
 	end
 	
 	modApi.islands[id] = (base or template_island):new{
-		id = id,
-		islandPath = string.format("img/strategy/", id)
+		Id = id,
+		IslandPath = string.format("img/strategy/", id)
 	}
 	local island = modApi.islands[id]
 	
 	if base ~= nil then
-		island:copyAssets(base.id)
+		island:CopyAssets(base.Id)
 	end
 	
 	return island
@@ -301,31 +301,31 @@ function modApi:setIsland(islandNumber, island)
 		AssertEntryExists(modApi.islands, island, "Island", "setIsland - Arg#2 (Island id)")
 		island = modApi.islands[island]
 	else
-		AssertTableHasFields({id = 'string'}, island, "setIsland - Arg#2 (Island)")
-		AssertEntryExists(modApi.islands, island.id, "Island", "setIsland - Arg#2 (Island)")
+		AssertTableHasFields({Id = 'string'}, island, "setIsland - Arg#2 (Island)")
+		AssertEntryExists(modApi.islands, island.Id, "Island", "setIsland - Arg#2 (Island)")
 	end
 	
 	local defaultRegionInfo = RegionInfo(Point(0,0), Point(0,0), 100)
 	local n = islandNumber-1
 	
-	Island_Magic[islandNumber] = island.magic
+	Island_Magic[islandNumber] = island.Magic
 	
 	Location[string.format("strategy/island%s.png", n)] = Island_Locations[islandNumber]
-	Location[string.format("strategy/island1x_%s.png", n)] = Island_Locations[islandNumber] - island.shift
-	Location[string.format("strategy/island1x_%s_out.png", n)] = Island_Locations[islandNumber] - island.shift
+	Location[string.format("strategy/island1x_%s.png", n)] = Island_Locations[islandNumber] - island.Shift
+	Location[string.format("strategy/island1x_%s_out.png", n)] = Island_Locations[islandNumber] - island.Shift
 	
 	for k = 0, 7 do
-		Region_Data[string.format("island_%s_%s", n, k)] = island.data[k+1] or defaultRegionInfo
+		Region_Data[string.format("island_%s_%s", n, k)] = island.Data[k+1] or defaultRegionInfo
 	end
 	
 	for k = 0, 7 do
-		_G["Network_Island_".. n][tostring(k)] = island.network[k+1]
+		_G["Network_Island_".. n][tostring(k)] = island.Network[k+1]
 	end
 	
-	modApi:copyIslandAssets(island.id, tostring(n))
+	modApi:copyIslandAssets(island.Id, tostring(n))
 	
-	if island.corp ~= nil then
-		modApi:setCorporation(islandNumber, island.corp)
+	if island.Corp ~= nil then
+		modApi:setCorporation(islandNumber, island.Corp)
 	end
 	
 	Islands[islandNumber] = island
@@ -338,25 +338,25 @@ for i, id in ipairs(vanillaIslands) do
 	local island = modApi:newIsland(id)
 	local n = i-1
 	
-	island.shift = Island_Shifts[i]
-	island.magic = Island_Magic[i]
-	--island.location = Island_Locations[i]
-	island.data = {}
-	island.network = {}
+	island.Shift = Island_Shifts[i]
+	island.Magic = Island_Magic[i]
+	--island.Location = Island_Locations[i]
+	island.Data = {}
+	island.Network = {}
 	
 	if i <= 4 then
 		for k = 0, 7 do
-			table.insert(island.data, Region_Data[string.format("island_%s_%s", n, k)])
+			table.insert(island.Data, Region_Data[string.format("island_%s_%s", n, k)])
 		end
 		
 		for k = 0, 7 do
-			table.insert(island.network, _G["Network_Island_".. n][tostring(k)])
+			table.insert(island.Network, _G["Network_Island_".. n][tostring(k)])
 		end
 		
-		island:setCorporation(i)
+		island:SetCorporation(i)
 	end
 	
-	island:setEnemyList(id)
+	island:SetEnemyList(id)
 	
 	-- Island assets will be copied in mod_loader.loadAdditionalSprites
 	--modApi:copyIslandAssets(tostring(n), id)

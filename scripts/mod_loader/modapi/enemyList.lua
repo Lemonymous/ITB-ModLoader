@@ -57,33 +57,33 @@ function shuffle_list(list)
 end
 
 local template_enemyList = {
-	isEnemyListClass = true,
-	categories = { "Core", "Core", "Core", "Leaders", "Unique", "Unique" },
-	enemies = {},
-	bosses = {}
+	IsEnemyListClass = true,
+	Categories = { "Core", "Core", "Core", "Leaders", "Unique", "Unique" },
+	Enemies = {},
+	Bosses = {}
 }
 
 CreateClass(template_enemyList)
 
-function template_enemyList:getId()
-	return self.id
+function template_enemyList:GetId()
+	return self.Id
 end
 
-function template_enemyList:setCategories(categories)
-	AssertEquals(6, #categories, "setCategories - Arg#1 (number of categories)")
+function template_enemyList:SetCategories(categories)
+	AssertEquals(6, #categories, "SetCategories - Arg#1 (number of categories)")
 	
-	self.categories = categories
+	self.Categories = categories
 end
 
-function template_enemyList:addEnemy(enemy, category)
-	AssertEquals('string', type(enemy), "addEnemy - Arg#1 (enemy id)")
-	AssertEquals('string', type(enemy), "addEnemy - Arg#1 (enemy category; 'Core', 'Leaders' or 'Unique')")
+function template_enemyList:AddEnemy(enemy, category)
+	AssertEquals('string', type(enemy), "AddEnemy - Arg#1 (enemy id)")
+	AssertEquals('string', type(enemy), "AddEnemy - Arg#1 (enemy category; 'Core', 'Leaders' or 'Unique')")
 	
-	self.enemies[category] = self.enemies[category] or {}
-	table.insert(self.enemies[category], enemy)
+	self.Enemies[category] = self.Enemies[category] or {}
+	table.insert(self.Enemies[category], enemy)
 end
 
-function template_enemyList:pickEnemies(islandNumber, timesPicked)
+function template_enemyList:PickEnemies(islandNumber, timesPicked)
 	timesPicked = timesPicked or {}
 	local result = {}
 	local choices = {}
@@ -120,8 +120,8 @@ function template_enemyList:pickEnemies(islandNumber, timesPicked)
 		local leastPicked = INT_MAX
 		
 		choices[category] = {}
-		self.enemies[category] = self.enemies[category] or {}
-		for _, enemy in ipairs(self.enemies[category]) do
+		self.Enemies[category] = self.Enemies[category] or {}
+		for _, enemy in ipairs(self.Enemies[category]) do
 			if isUnlocked(enemy) and not excluded[enemy] then
 				table.insert(choices[category], enemy)
 			end
@@ -135,7 +135,7 @@ function template_enemyList:pickEnemies(islandNumber, timesPicked)
 		return choices[category]
 	end
 	
-	for _, category in ipairs(self.categories) do
+	for _, category in ipairs(self.Categories) do
 		local enemyChoices = getEnemyChoices(category)
 		local choice = "Scorpion"
 		
@@ -153,12 +153,12 @@ function template_enemyList:pickEnemies(islandNumber, timesPicked)
 		table.insert(result, choice)
 	end
 	
-	AssertEquals(6, #result, "pickEnemies - Resulting number of enemies")
+	AssertEquals(6, #result, "PickEnemies - Resulting number of enemies")
 	
 	return result
 end
 
-function template_enemyList:pickBoss()
+function template_enemyList:PickBoss()
 	
 end
 
@@ -174,10 +174,10 @@ function modApi:newEnemyList(id, base)
 		base = modApi.enemyLists[base]
 		
 	elseif type(base) == 'table' then
-		AssertEntryExists(modApi.enemyLists, base.id, "EnemyList", "newEnemyList - Arg#2")
+		AssertEntryExists(modApi.enemyLists, base.Id, "EnemyList", "newEnemyList - Arg#2")
 	end
 	
-	modApi.enemyLists[id] = (base or template_enemyList):new{ id = id }
+	modApi.enemyLists[id] = (base or template_enemyList):new{ Id = id }
 	local enemyList = modApi.enemyLists[id]
 	
 	-- create unique copies of all tables in default template
@@ -197,7 +197,7 @@ function modApi:getEnemyList(enemyListIdOrIslandNumber)
 		local islandNumber = enemyListIdOrIslandNumber
 		local island = modApi:getIsland(islandNumber)
 		
-		return island:getEnemyList()
+		return island:GetEnemyList()
 		
 	elseif type(enemyListIdOrIslandNumber) == 'string' then
 		local enemyList_id = enemyListIdOrIslandNumber
@@ -226,12 +226,12 @@ for i, id in ipairs(vanillaEnemyLists) do
 	local enemyList = modApi:newEnemyList(id)
 	local corp = _G[vanillaCorps[i]]
 	
-	enemyList.enemies = copy_table(EnemyLists)
+	enemyList.Enemies = copy_table(EnemyLists)
 	
 	if corp then
-		enemyList.bosses = add_arrays(corp.Bosses, corp.UniqueBosses)
+		enemyList.Bosses = add_arrays(corp.Bosses, corp.UniqueBosses)
 	else
-		enemyList.bosses = shallow_copy(Corp_Default.Bosses)
+		enemyList.Bosses = shallow_copy(Corp_Default.Bosses)
 	end
 end
 
@@ -242,11 +242,11 @@ function startNewGame()
 	local timesPicked = {}
 	for i = 1, 5 do
 		local island = modApi:getIsland(i)
-		local enemyList = island:getEnemyList()
+		local enemyList = island:GetEnemyList()
 		
 		if enemyList ~= nil then
-			GAME.Enemies[i] = enemyList:pickEnemies(i, timesPicked)
-			--GAME.Bosses[i] = enemyList:pickBosses(i) or GAME.Bosses[i]
+			GAME.Enemies[i] = enemyList:PickEnemies(i, timesPicked)
+			--GAME.Bosses[i] = enemyList:PickBosses(i) or GAME.Bosses[i]
 		end
 	end
 end

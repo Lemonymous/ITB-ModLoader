@@ -105,46 +105,46 @@ local function AssertResourcesDatExists(msg)
 end
 
 local template_tileset = {
-	isTilesetClass = true,
-	climate = "Not defined"
+	IsTilesetClass = true,
+	Climate = "Not defined"
 }
 
 CreateClass(template_tileset)
 
-function template_tileset:getId()
-	return self.id
+function template_tileset:GetId()
+	return self.Id
 end
 
-function template_tileset:copyAssets(tileset_id)
-	AssertEntryExists(modApi.tilesets, tileset_id, "Tileset", "copyAssets - Arg#1 (tileset id)")
+function template_tileset:CopyAssets(tileset_id)
+	AssertEntryExists(modApi.tilesets, tileset_id, "Tileset", "CopyAssets - Arg#1 (tileset id)")
 	
-	if tileset_id == self:getId() then
+	if tileset_id == self:GetId() then
 		return
 	end
 	
-	modApi:copyTilesetAssets("tiles_".. tileset_id, "tiles_".. self:getId())
+	modApi:copyTilesetAssets("tiles_".. tileset_id, "tiles_".. self:GetId())
 end
 
-function template_tileset:getTilePath()
-	return self.tilePath:gsub("[^/]$","%1/")
+function template_tileset:GetTilePath()
+	return self.TilePath:gsub("[^/]$","%1/")
 end
 
-function template_tileset:setTilePath(path)
-	AssertEquals('string', type(path), "setTilePath - Arg#1 (folder containing tile images, relative to mod root)")
+function template_tileset:SetTilePath(path)
+	AssertEquals('string', type(path), "SetTilePath - Arg#1 (folder containing tile images, relative to mod root)")
 	
 	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	assert(modApi:directoryExists(modPath .. path), string.format("setTilePath - Arg#1: Directory '%s' does not exist", modPath .. path))
+	assert(modApi:directoryExists(modPath .. path), string.format("SetTilePath - Arg#1: Directory '%s' does not exist", modPath .. path))
 	
-	self.tilePath = path
+	self.TilePath = path
 end
 
-function template_tileset:getEnvironmentChance(tileType, difficulty)
-	-- tileset.environmentChance can be structured as any of the following:
-	-- tileset.environmentChance == chance
-	-- tileset.environmentChance[tileType] == chance
-	-- tileset.environmentChance[difficulty][tileType] == chance
+function template_tileset:GetEnvironmentChance(tileType, difficulty)
+	-- tileset.EnvironmentChance can be structured as any of the following:
+	-- tileset.EnvironmentChance == chance
+	-- tileset.EnvironmentChance[tileType] == chance
+	-- tileset.EnvironmentChance[difficulty][tileType] == chance
 	
-	local env = self.environmentChance
+	local env = self.EnvironmentChance
 	local chance
 	
 	if type(env) == 'table' then
@@ -160,29 +160,29 @@ function template_tileset:getEnvironmentChance(tileType, difficulty)
 	return type(chance) == 'number' and chance or 0
 end
 
-function template_tileset:getRainChance()
-	return type(self.rainChance) == 'number' and self.rainChance or 0
+function template_tileset:GetRainChance()
+	return type(self.RainChance) == 'number' and self.RainChance or 0
 end
 
-function template_tileset:addTile(id, loc)
-	AssertEquals('string', type(id), "addTile - Arg#1 (tile id)")
-	assert(loc == nil or isUserdataPoint(loc), "addTile - Arg#2 (tile offset): Expected 'nil' or 'Point', but was '%s'", type(loc))
+function template_tileset:AddTile(id, loc)
+	AssertEquals('string', type(id), "AddTile - Arg#1 (tile id)")
+	assert(loc == nil or isUserdataPoint(loc), "AddTile - Arg#2 (tile offset): Expected 'nil' or 'Point', but was '%s'", type(loc))
 	
 	if loc == nil then
 		loc = tileLoc[id]
 	end
 	
 	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	local resourcePath = string.format("combat/tiles_%s/%s.png", self:getId(), id)
-	local filePath = string.format("%s%s%s.png", modPath, self:getTilePath(), id)
+	local resourcePath = string.format("combat/tiles_%s/%s.png", self:GetId(), id)
+	local filePath = string.format("%s%s%s.png", modPath, self:GetTilePath(), id)
 	Location[resourcePath] = loc
 	
-	assert(modApi:fileExists(filePath), string.format("addTile - Arg#1: File '%s' Could not be found", id, self:getId(), filePath))
+	assert(modApi:fileExists(filePath), string.format("AddTile - Arg#1: File '%s' Could not be found", id, self:GetId(), filePath))
 	
 	modApi:appendAsset("img/".. resourcePath, filePath)
 end
 
-function template_tileset:addTiles(tiles)
+function template_tileset:AddTiles(tiles)
 	for id, loc in pairs(tiles) do
 		
 		if type(id) == 'number' then
@@ -190,33 +190,33 @@ function template_tileset:addTiles(tiles)
 			loc = nil
 		end
 		
-		self:addTile(id, loc)
+		self:AddTile(id, loc)
 	end
 end
 
-function template_tileset:setTilesetIcon(filePath)
-	AssertFilePath(filePath, ".png", "setTilesetIcon - Arg#1 (Filepath for tileset icon)")
+function template_tileset:SetTilesetIcon(filePath)
+	AssertFilePath(filePath, ".png", "SetTilesetIcon - Arg#1 (Filepath for tileset icon)")
 	
-	modApi:appendAsset(string.format("img/strategy/corp/%s_env.png", self:getId()), getModFilePathRelativeToGameDir(filePath))
+	modApi:appendAsset(string.format("img/strategy/corp/%s_env.png", self:GetId()), getModFilePathRelativeToGameDir(filePath))
 end
 
-function template_tileset:appendAssets()
+function template_tileset:AppendAssets()
 	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	local tilePath = self:getTilePath()
+	local tilePath = self:GetTilePath()
 	local files = mod_loader:enumerateFilesIn(modPath .. tilePath)
 	local images = {}
 	
 	for _, file in ipairs(files) do
 		if modApi:stringEndsWith(file, ".png") then
 			if file == "env.png" then
-				self:setTilesetIcon(tilePath .. file)
+				self:SetTilesetIcon(tilePath .. file)
 			else
 				table.insert(images, file:sub(1, -5))
 			end
 		end
 	end
 	
-	self:addTiles(images)
+	self:AddTiles(images)
 end
 
 modApi.tilesets = {}
@@ -259,17 +259,17 @@ function modApi:newTileset(id, base)
 		base = modApi.tilesets[base]
 		
 	elseif type(base) == 'table' then
-		AssertEntryExists(modApi.tilesets, base.id, "Tileset", "newTileset - Arg#2")
+		AssertEntryExists(modApi.tilesets, base.Id, "Tileset", "newTileset - Arg#2")
 	end
 	
 	modApi.tilesets[id] = (base or template_tileset):new{
-		id = id,
-		tilePath = string.format("img/combat/tiles_%s/", id)
+		Id = id,
+		TilePath = string.format("img/combat/tiles_%s/", id)
 	}
 	local tileset = modApi.tilesets[id]
 	
 	if base ~= nil then
-		tileset:copyAssets(base.id)
+		tileset:CopyAssets(base.Id)
 	end
 	
 	return tileset
@@ -311,7 +311,7 @@ local tileTypes = {
 }
 local difficulty
 
--- temporarily override GetDifficulty while extracting environmentChance for vanilla tilesets
+-- temporarily override GetDifficulty while extracting EnvironmentChance for vanilla tilesets
 local oldGetDifficulty = GetDifficulty
 function GetDifficulty()
 	return difficulty
@@ -323,21 +323,21 @@ for i, tileset_id in ipairs(vanillaTilesets) do
 	
 	local corp = vanillaCorporations[i]
 	if corp then
-		tileset.climate = Mission_Texts[corp .."_Environment"] or template_tileset.climate
+		tileset.Climate = Mission_Texts[corp .."_Environment"] or template_tileset.Climate
 	end
 	
-	-- extract rainChance from vanilla function
-	tileset.rainChance = getRainChance(tileset_id)
+	-- extract RainChance from vanilla function
+	tileset.RainChance = getRainChance(tileset_id)
 	
-	-- extract environmentChance from vanilla function
-	tileset.environmentChance = {}
+	-- extract EnvironmentChance from vanilla function
+	tileset.EnvironmentChance = {}
 	
 	for _, diff in ipairs(difficulties) do
 		difficulty = diff
-		tileset.environmentChance[diff] = {}
+		tileset.EnvironmentChance[diff] = {}
 		
 		for _, tileType in ipairs(tileTypes) do
-			tileset.environmentChance[diff][tileType] = getEnvironmentChance(tileset_id, tileType)
+			tileset.EnvironmentChance[diff][tileType] = getEnvironmentChance(tileset_id, tileType)
 		end
 	end
 end

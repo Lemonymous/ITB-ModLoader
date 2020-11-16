@@ -74,44 +74,44 @@ local function AssertEntryExists(tbl, entry, name, msg)
 end
 
 local template_corp = Corp_Default
-template_corp.isCorporationClass = true
-template_corp.id = "Corp_Default"
+template_corp.IsCorporationClass = true
+template_corp.Id = "Corp_Default"
 template_corp.Description = "This is a non-descript default corporation"
 template_corp.Bark_Name = "Default"
 
-function template_corp:getId()
-	return self.id
+function template_corp:GetId()
+	return self.Id
 end
 
-function template_corp:setTileset(tilesetOrId)
-	AssertMultiple({'table', 'string'}, type(tilesetOrId), "setTileset - Arg#1 (Tileset or id")
+function template_corp:SetTileset(tilesetOrId)
+	AssertMultiple({'table', 'string'}, type(tilesetOrId), "SetTileset - Arg#1 (Tileset or id")
 	
 	local tileset = tilesetOrId
 	
 	if type(tileset) == 'table' then
-		assert(tileset.isTilesetClass, "setTileset - Arg#1: Table is not a valid tileset")
+		assert(tileset.IsTilesetClass, "SetTileset - Arg#1: Table is not a valid tileset")
 	else
 		tileset = modApi:getTileset(tileset)
 	end
 	
-	self.Tileset = tileset:getId()
+	self.Tileset = tileset:GetId()
 end
 
-function template_corp:getTileset()
+function template_corp:GetTileset()
 	return self.Tileset
 end
 
-function template_corp:setOffice(path_office_large, path_office_small)
-	AssertFilePath(path_office_large, ".png", "setOffice - Arg#1 (Filepath for corporation office)")
-	AssertFilePath(path_office_small, ".png", "setOffice - Arg#2 (Filepath for small version of corporation)")
+function template_corp:SetOffice(path_office_large, path_office_small)
+	AssertFilePath(path_office_large, ".png", "SetOffice - Arg#1 (Filepath for corporation office)")
+	AssertFilePath(path_office_small, ".png", "SetOffice - Arg#2 (Filepath for small version of corporation)")
 	
-	self.Office = self:getId()
+	self.Office = self:GetId()
 	modApi:appendAsset(string.format("img/ui/corps/%s.png", self.Office), getModFilePathRelativeToGameDir(path_office_large))
 	modApi:appendAsset(string.format("img/ui/corps/%s_small.png", self.Office), getModFilePathRelativeToGameDir(path_office_small))
 end
 
-function template_corp:setCEO(path_ceo_image, personality)
-	AssertFilePath(path_ceo_image, ".png", "setCEO - Arg#1 (Filepath for CEO portrait)")
+function template_corp:SetCEO(path_ceo_image, personality)
+	AssertFilePath(path_ceo_image, ".png", "SetCEO - Arg#1 (Filepath for CEO portrait)")
 	AssertTableHasFields(
 	{
 		Label = 'string',
@@ -120,14 +120,14 @@ function template_corp:setCEO(path_ceo_image, personality)
 	},
 	personality, "setCEO - Arg#2 (CEO personality)")
 	
-	local ceo_personality_id = "CEO_".. self:getId()
-	self.CEO_Image = self:getId() ..".png"
+	local ceo_personality_id = "CEO_".. self:GetId()
+	self.CEO_Image = self:GetId() ..".png"
 	self.CEO_Name = personality.Name
 	self.CEO_Personality = ceo_personality_id
 	
 	Personality[ceo_personality_id] = personality
 	
-	modApi:appendAsset(string.format("img/portraits/ceo/%s.png", self:getId()), getModFilePathRelativeToGameDir(path_ceo_image))
+	modApi:appendAsset(string.format("img/portraits/ceo/%s.png", self:GetId()), getModFilePathRelativeToGameDir(path_ceo_image))
 end
 
 local vanillaCorporations = {
@@ -147,10 +147,10 @@ function modApi:newCorporation(id, base)
 		base = modApi.corporations[base]
 		
 	elseif type(base) == 'table' then
-		AssertEntryExists(modApi.corporations, base.id, "Corporation", "newCorporation - Arg#2")
+		AssertEntryExists(modApi.corporations, base.Id, "Corporation", "newCorporation - Arg#2")
 	end
 	
-	modApi.corporations[id] = (base or template_corp):new{ id = id }
+	modApi.corporations[id] = (base or template_corp):new{ Id = id }
 	local corp = modApi.corporations[id]
 	
 	-- create unique copies of all tables in default template
@@ -190,8 +190,8 @@ function modApi:setCorporation(islandNumber, corp)
 		AssertEntryExists(modApi.corporations, corp, "Corporation", "setCorporation - Arg#2 (Corporation id)")
 		corp = modApi.corporations[corp]
 	else
-		AssertTableHasFields({id = 'string'}, corp, "setCorporation - Arg#2 (Corporation)")
-		AssertEntryExists(modApi.corporations, corp.id, "Corporation", "setCorporation - Arg#2 (Corporation)")
+		AssertTableHasFields({Id = 'string'}, corp, "setCorporation - Arg#2 (Corporation)")
+		AssertEntryExists(modApi.corporations, corp.Id, "Corporation", "setCorporation - Arg#2 (Corporation)")
 	end
 	
 	local vanilla_corp = vanillaCorporations[islandNumber]
@@ -200,7 +200,7 @@ function modApi:setCorporation(islandNumber, corp)
 	
 	modApi.modLoaderDictionary[vanilla_corp .."_CEO_Name"] = corp.CEO_Name
 	modApi.modLoaderDictionary[vanilla_corp .."_Name"] = corp.Name
-	modApi.modLoaderDictionary[vanilla_corp .."_Environment"] = modApi:getTileset(corp.Tileset).climate
+	modApi.modLoaderDictionary[vanilla_corp .."_Environment"] = modApi:getTileset(corp.Tileset).Climate
 	modApi.modLoaderDictionary[vanilla_corp .."_Description"] = corp.Description
 	modApi.modLoaderDictionary[vanilla_corp .."_Bark"] = corp.Bark_Name
 end
