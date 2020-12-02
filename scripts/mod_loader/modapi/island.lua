@@ -1,21 +1,4 @@
 
-local function getModFilePathRelativeToGameDir(filePathRelativeToModDir)
-	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	return modPath .. filePathRelativeToModDir
-end
-
-local function AssertFilePath(filePath, extension, msg)
-	msg = (msg and msg .. ": ") or ""
-	assert(type(filePath) == 'string', string.format("%sExpected 'string', but was '%s'", msg, type(filePath)))
-	
-	if extension ~= nil and extension ~= "" then
-		assert(modApi:stringEndsWith(filePath, extension), string.format("%sExpected extension '.png'. Got '%s'", msg, filePath))
-	end
-	
-	local fullFilePath = getModFilePathRelativeToGameDir(filePath)
-	assert(modApi:fileExists(fullFilePath), string.format("%sFile '%s' could not be found", msg, fullFilePath))
-end
-
 local function AssertTableHasFields(expected, actual, msg)
 	msg = (msg and msg .. ": ") or ""
 	assert(type(actual) == 'table', string.format("%sExpected 'table', but was '%s'", msg, type(actual)))
@@ -23,44 +6,6 @@ local function AssertTableHasFields(expected, actual, msg)
 	for key, value in pairs(expected) do
 		assert(value == type(actual[key]), string.format("%sExpected field '%s' to be '%s', but was '%s'", msg, key, value, type(actual[key])))
 	end
-end
-
-local function AssertMultiple(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .."Expected "
-	
-	for i = 1, #expected do
-		msg = string.format("%s'%s'", msg, tostring(expected[i]))
-		if #expected > i then
-			if #expected - i == 1 then
-				msg = msg .." or "
-			else
-				msg = msg ..", "
-			end
-		end
-	end
-	
-	msg = string.format("%s, but was '%s'", msg, tostring(actual))
-	
-	local result = false
-	for _, e in ipairs(expected) do
-		if e == actual then
-			result = true
-			break
-		end
-	end
-	
-	assert(result, msg)
-end
-
-local function AssertEquals(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .. string.format("Expected '%s', but was '%s'", tostring(expected), tostring(actual))
-	assert(expected == actual, msg)
-end
-
-local function AssertRange(from, to, actual, msg)
-	assert(actual >= from and actual <= to, string.format("%s: Expected value in range [%s,%s], but was %s", msg, from, to, actual))
 end
 
 local function AssertIsUniqueId(isUnique, id, msg)
@@ -71,11 +16,6 @@ end
 
 local function AssertEntryExists(tbl, entry, name, msg)
 	assert(tbl[entry] ~= nil, string.format("%s: %s '%s' could not be found. List of current valid %ss:\n%s", msg, name, entry, string.lower(name), save_table(tbl, 0)))
-end
-
-local function AssertResourcesDatExists(msg)
-	msg = (msg and msg .. ": ") or ""
-	assert(modApi.resource ~= nil, msg .. "Resource.dat is closed. It can only be modified while mods are initializing")
 end
 
 local vanillaIslands = {
@@ -157,16 +97,13 @@ function template_island:GetIslandPath()
 end
 
 function template_island:SetIslandPath(path)
-	AssertEquals('string', type(path), "SetIslandPath - Arg#1 (folder containing island images, relative to mod root)")
-	
-	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	assert(modApi:directoryExists(modPath .. path), string.format("SetIslandPath - Arg#1: Directory '%s' does not exist", modPath .. path))
+	Assert.DirectoryRelativeToCurrentModExists(path, "SetIslandPath - Arg#1 (folder containing island images, relative to mod root)")
 	
 	self.IslandPath = path
 end
 
 function template_island:SetEnemyList(enemyListOrIdOrIslandNumber)
-	AssertMultiple({'table', 'string', 'number'}, type(enemyListOrIdOrIslandNumber), "SetEnemyList - Arg#1 (Enemy list, id or island number)")
+	Assert.Equals({'table', 'string', 'number'}, type(enemyListOrIdOrIslandNumber), "SetEnemyList - Arg#1 (Enemy list, id or island number)")
 	
 	local enemyList = enemyListOrIdOrIslandNumber
 	
@@ -184,7 +121,7 @@ function template_island:GetEnemyList()
 end
 
 function template_island:SetCorporation(corpOrIdOrIslandNumber)
-	AssertMultiple({'table', 'string', 'number'}, type(corpOrIdOrIslandNumber), "SetCorporation - Arg#1 (Corp, id or island number")
+	Assert.Equals({'table', 'string', 'number'}, type(corpOrIdOrIslandNumber), "SetCorporation - Arg#1 (Corp, id or island number")
 	
 	local corp = corpOrIdOrIslandNumber
 	
@@ -233,9 +170,9 @@ end
 modApi.islands = {}
 
 function modApi:copyIslandAssets(from, to)
-	AssertEquals('string', type(from), "Arg#1")
-	AssertEquals('string', type(to), "Arg#2")
-	AssertResourcesDatExists("copyIslandAssets")
+	Assert.Equals('string', type(from), "Arg#1")
+	Assert.Equals('string', type(to), "Arg#2")
+	Assert.ResourceDatIsOpen("copyIslandAssets")
 	
 	local root = "img/strategy/"
 	
@@ -250,9 +187,9 @@ function modApi:copyIslandAssets(from, to)
 end
 
 function modApi:newIsland(id, base)
-	AssertEquals('string', type(id), "newIsland - Arg#1 (Island id)")
+	Assert.Equals('string', type(id), "newIsland - Arg#1 (Island id)")
 	AssertIsUniqueId(modApi.islands[id] == nil, id, "newIsland - Arg#1 (Island id)")
-	AssertMultiple({'nil', 'table', 'string'}, type(base), "newIsland - Arg#2 (Base island/id)")
+	Assert.Equals({'nil', 'table', 'string'}, type(base), "newIsland - Arg#2 (Base island/id)")
 	
 	if type(base) == 'string' then
 		AssertEntryExists(modApi.islands, base, "Island", "newIsland - Arg#2")
@@ -276,11 +213,11 @@ function modApi:newIsland(id, base)
 end
 
 function modApi:getIsland(islandNumberOrIslandId)
-	AssertMultiple({'number', 'string'}, type(islandNumberOrIslandId), "getIsland - Arg#1 (Island number or island id)")
+	Assert.Equals({'number', 'string'}, type(islandNumberOrIslandId), "getIsland - Arg#1 (Island number or island id)")
 	
 	if type(islandNumberOrIslandId) == 'number' then
 		local islandNumber = islandNumberOrIslandId
-		AssertRange(1, 5, islandNumber, "getIsland - Arg#1 (Island number)")
+		Assert.Range(1, 5, islandNumber, "getIsland - Arg#1 (Island number)")
 		
 		return Islands[islandNumber]
 		
@@ -293,9 +230,9 @@ function modApi:getIsland(islandNumberOrIslandId)
 end
 
 function modApi:setIsland(islandNumber, island)
-	AssertEquals('number', type(islandNumber), "setIsland - Arg#1 (Island number)")
-	AssertRange(1, 5, islandNumber, "setIsland - Arg#1 (Island Number)")
-	AssertMultiple({'table', 'string'}, type(island), "setIsland - Arg#2 (Island)")
+	Assert.Equals('number', type(islandNumber), "setIsland - Arg#1 (Island number)")
+	Assert.Range(1, 5, islandNumber, "setIsland - Arg#1 (Island Number)")
+	Assert.Equals({'table', 'string'}, type(island), "setIsland - Arg#2 (Island)")
 	
 	if type(island) == 'string' then
 		AssertEntryExists(modApi.islands, island, "Island", "setIsland - Arg#2 (Island id)")
