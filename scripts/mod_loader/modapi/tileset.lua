@@ -357,8 +357,8 @@ end
 function getEnvironmentChance(sectorType, tileType)
 	local tileset = modApi:getTileset(sectorType)
 	
-	if tileset and tileset.getEnvironmentChance then
-		return tileset:getEnvironmentChance(tileType, GetDifficulty())
+	if tileset and tileset.GetEnvironmentChance then
+		return tileset:GetEnvironmentChance(tileType, GetDifficulty())
 	end
 	
 	return 0
