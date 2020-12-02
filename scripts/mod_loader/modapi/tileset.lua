@@ -38,55 +38,8 @@ local tileLoc = {
 	water_3 = waterLoc,
 }
 
-local function getModFilePathRelativeToGameDir(filePathRelativeToModDir)
-	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	return modPath .. filePathRelativeToModDir
-end
-
-local function AssertFilePath(filePath, extension, msg)
-	msg = (msg and msg .. ": ") or ""
-	assert(type(filePath) == 'string', string.format("%sExpected 'string', but was '%s'", msg, type(filePath)))
-	
-	if extension ~= nil and extension ~= "" then
-		assert(modApi:stringEndsWith(filePath, extension), string.format("%sExpected extension '.png'. Got '%s'", msg, filePath))
-	end
-	
-	local fullFilePath = getModFilePathRelativeToGameDir(filePath)
-	assert(modApi:fileExists(fullFilePath), string.format("%sFile '%s' could not be found", msg, fullFilePath))
-end
-
-local function AssertMultiple(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .."Expected "
-	
-	for i = 1, #expected do
-		msg = string.format("%s'%s'", msg, tostring(expected[i]))
-		if #expected > i then
-			if #expected - i == 1 then
-				msg = msg .." or "
-			else
-				msg = msg ..", "
-			end
-		end
-	end
-	
-	msg = string.format("%s, but was '%s'", msg, tostring(actual))
-	
-	local result = false
-	for _, e in ipairs(expected) do
-		if e == actual then
-			result = true
-			break
-		end
-	end
-	
-	assert(result, msg)
-end
-
-local function AssertEquals(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .. string.format("Expected '%s', but was '%s'", tostring(expected), tostring(actual))
-	assert(expected == actual, msg)
+local function getCurrentModResourcePath()
+	return mod_loader.mods[modApi.currentMod].resourcePath
 end
 
 local function AssertIsUniqueId(isUnique, id, msg)
@@ -97,11 +50,6 @@ end
 
 local function AssertEntryExists(tbl, entry, name, msg)
 	assert(tbl[entry] ~= nil, string.format("%s: %s '%s' could not be found. List of current valid %ss:\n%s", msg, name, entry, string.lower(name), save_table(tbl, 0)))
-end
-
-local function AssertResourcesDatExists(msg)
-	msg = (msg and msg .. ": ") or ""
-	assert(modApi.resource ~= nil, msg .. "Resource.dat is closed. It can only be modified while mods are initializing")
 end
 
 local template_tileset = {
@@ -130,10 +78,7 @@ function template_tileset:GetTilePath()
 end
 
 function template_tileset:SetTilePath(path)
-	AssertEquals('string', type(path), "SetTilePath - Arg#1 (folder containing tile images, relative to mod root)")
-	
-	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	assert(modApi:directoryExists(modPath .. path), string.format("SetTilePath - Arg#1: Directory '%s' does not exist", modPath .. path))
+	Assert.DirectoryRelativeToCurrentModExists(path, "SetTilePath - Arg#1 (folder containing tile images, relative to mod root)")
 	
 	self.TilePath = path
 end
@@ -165,7 +110,7 @@ function template_tileset:GetRainChance()
 end
 
 function template_tileset:AddTile(id, loc)
-	AssertEquals('string', type(id), "AddTile - Arg#1 (tile id)")
+	Assert.Equals('string', type(id), "AddTile - Arg#1 (tile id)")
 	assert(loc == nil or isUserdataPoint(loc), "AddTile - Arg#2 (tile offset): Expected 'nil' or 'Point', but was '%s'", type(loc))
 	
 	if loc == nil then
@@ -177,7 +122,7 @@ function template_tileset:AddTile(id, loc)
 	local filePath = string.format("%s%s%s.png", modPath, self:GetTilePath(), id)
 	Location[resourcePath] = loc
 	
-	assert(modApi:fileExists(filePath), string.format("AddTile - Arg#1: File '%s' Could not be found", id, self:GetId(), filePath))
+	Assert.FileExists(filePath, string.format("AddTile - Arg#1"))
 	
 	modApi:appendAsset("img/".. resourcePath, filePath)
 end
@@ -195,9 +140,10 @@ function template_tileset:AddTiles(tiles)
 end
 
 function template_tileset:SetTilesetIcon(filePath)
-	AssertFilePath(filePath, ".png", "SetTilesetIcon - Arg#1 (Filepath for tileset icon)")
+	Assert.FileRelativeToCurrentModExists(filePath, "SetTileIcon - Arg#1 (Filepath for tileset icon)")
 	
-	modApi:appendAsset(string.format("img/strategy/corp/%s_env.png", self:GetId()), getModFilePathRelativeToGameDir(filePath))
+	local modPath = getCurrentModResourcePath()
+	modApi:appendAsset(string.format("img/strategy/corp/%s_env.png", self:GetId()), modPath .. filePath)
 end
 
 function template_tileset:AppendAssets()
@@ -222,9 +168,9 @@ end
 modApi.tilesets = {}
 
 function modApi:copyTilesetAssets(from, to)
-	AssertResourcesDatExists("copyTilesetAssets")
-	AssertEquals('string', type(from), "Arg#1")
-	AssertEquals('string', type(to), "Arg#2")
+	Assert.ResourceDatIsOpen("copyTilesetAssets")
+	Assert.Equals('string', type(from), "Arg#1")
+	Assert.Equals('string', type(to), "Arg#2")
 	assert(string.find(from, "[/\\]") == nil, "copyTilesetAssets - Arg#1: Expected directory name without '\\' and '/', was ".. from)
 	assert(string.find(to, "[/\\]") == nil, "copyTilesetAssets - Arg#2: Expected directory name without '\\' and '/', was ".. to)
 	
@@ -250,9 +196,9 @@ function modApi:copyTilesetAssets(from, to)
 end
 
 function modApi:newTileset(id, base)
-	AssertEquals('string', type(id), "newTileset - Arg#1 (Tileset id)")
+	Assert.Equals('string', type(id), "newTileset - Arg#1 (Tileset id)")
 	AssertIsUniqueId(modApi.tilesets[id] == nil, id, "newTileset - Arg#1 (Tileset id)")
-	AssertMultiple({'nil', 'table', 'string'}, type(base), "newTileset - Arg#2 (Base tileset/id)")
+	Assert.Equals({'nil', 'table', 'string'}, type(base), "newTileset - Arg#2 (Base tileset/id)")
 	
 	if type(base) == 'string' then
 		AssertEntryExists(modApi.tilesets, base, "Tileset", "newTileset - Arg#2")
