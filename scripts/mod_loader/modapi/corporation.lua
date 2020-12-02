@@ -1,19 +1,6 @@
 
-local function getModFilePathRelativeToGameDir(filePathRelativeToModDir)
-	local modPath = mod_loader.mods[modApi.currentMod].resourcePath
-	return modPath .. filePathRelativeToModDir
-end
-
-local function AssertFilePath(filePath, extension, msg)
-	msg = (msg and msg .. ": ") or ""
-	assert(type(filePath) == 'string', string.format("%sExpected 'string', but was '%s'", msg, type(filePath)))
-	
-	if extension ~= nil and extension ~= "" then
-		assert(modApi:stringEndsWith(filePath, extension), string.format("%sExpected extension '.png'. Got '%s'", msg, filePath))
-	end
-	
-	local fullFilePath = getModFilePathRelativeToGameDir(filePath)
-	assert(modApi:fileExists(fullFilePath), string.format("%sFile '%s' could not be found", msg, fullFilePath))
+local function getCurrentModResourcePath()
+	return mod_loader.mods[modApi.currentMod].resourcePath
 end
 
 local function AssertTableHasFields(expected, actual, msg)
@@ -23,44 +10,6 @@ local function AssertTableHasFields(expected, actual, msg)
 	for key, value in pairs(expected) do
 		assert(value == type(actual[key]), string.format("%sExpected field '%s' to be '%s', but was '%s'", msg, key, value, type(actual[key])))
 	end
-end
-
-local function AssertMultiple(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .."Expected "
-	
-	for i = 1, #expected do
-		msg = string.format("%s'%s'", msg, tostring(expected[i]))
-		if #expected > i then
-			if #expected - i == 1 then
-				msg = msg .." or "
-			else
-				msg = msg ..", "
-			end
-		end
-	end
-	
-	msg = string.format("%s, but was '%s'", msg, tostring(actual))
-	
-	local result = false
-	for _, e in ipairs(expected) do
-		if e == actual then
-			result = true
-			break
-		end
-	end
-	
-	assert(result, msg)
-end
-
-local function AssertEquals(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .. string.format("Expected '%s', but was '%s'", tostring(expected), tostring(actual))
-	assert(expected == actual, msg)
-end
-
-local function AssertRange(from, to, actual, msg)
-	assert(actual >= from and actual <= to, string.format("%s: Expected value in range [%s,%s], but was %s", msg, from, to, actual))
 end
 
 local function AssertIsUniqueId(isUnique, id, msg)
@@ -84,7 +33,7 @@ function template_corp:GetId()
 end
 
 function template_corp:SetTileset(tilesetOrId)
-	AssertMultiple({'table', 'string'}, type(tilesetOrId), "SetTileset - Arg#1 (Tileset or id")
+	Assert.Equals({'table', 'string'}, type(tilesetOrId), "SetTileset - Arg#1 (Tileset or id")
 	
 	local tileset = tilesetOrId
 	
@@ -102,16 +51,18 @@ function template_corp:GetTileset()
 end
 
 function template_corp:SetOffice(path_office_large, path_office_small)
-	AssertFilePath(path_office_large, ".png", "SetOffice - Arg#1 (Filepath for corporation office)")
-	AssertFilePath(path_office_small, ".png", "SetOffice - Arg#2 (Filepath for small version of corporation)")
+	Assert.FileRelativeToCurrentModExists(path_office_large, "SetOffice - Arg#1 (Filepath for corporation office)")
+	Assert.FileRelativeToCurrentModExists(path_office_small, "SetOffice - Arg#2 (Filepath for small version of corporation)")
 	
 	self.Office = self:GetId()
-	modApi:appendAsset(string.format("img/ui/corps/%s.png", self.Office), getModFilePathRelativeToGameDir(path_office_large))
-	modApi:appendAsset(string.format("img/ui/corps/%s_small.png", self.Office), getModFilePathRelativeToGameDir(path_office_small))
+	
+	local modPath = getCurrentModResourcePath()
+	modApi:appendAsset(string.format("img/ui/corps/%s.png", self.Office), modPath .. path_office_large)
+	modApi:appendAsset(string.format("img/ui/corps/%s_small.png", self.Office), modPath .. path_office_small)
 end
 
 function template_corp:SetCEO(path_ceo_image, personality)
-	AssertFilePath(path_ceo_image, ".png", "SetCEO - Arg#1 (Filepath for CEO portrait)")
+	Assert.FileRelativeToCurrentModExists(path_ceo_image, "SetCEO - Arg#1 (Filepath for CEO portrait)")
 	AssertTableHasFields(
 	{
 		Label = 'string',
@@ -127,7 +78,8 @@ function template_corp:SetCEO(path_ceo_image, personality)
 	
 	Personality[ceo_personality_id] = personality
 	
-	modApi:appendAsset(string.format("img/portraits/ceo/%s.png", self:GetId()), getModFilePathRelativeToGameDir(path_ceo_image))
+	local modPath = getCurrentModResourcePath()
+	modApi:appendAsset(string.format("img/portraits/ceo/%s.png", self:GetId()), modPath .. path_ceo_image)
 end
 
 local vanillaCorporations = {
@@ -138,9 +90,9 @@ local vanillaCorporations = {
 }
 
 function modApi:newCorporation(id, base)
-	AssertEquals('string', type(id), "newCorporation - Arg#1 (Corporation id)")
+	Assert.Equals('string', type(id), "newCorporation - Arg#1 (Corporation id)")
 	AssertIsUniqueId(modApi.corporations[id] == nil, id, "newCorporation - Arg#1 (Corporation id)")
-	AssertMultiple({'nil', 'table', 'string'}, type(base), "newCorporation - Arg#2 (Base corporation/id)")
+	Assert.Equals({'nil', 'table', 'string'}, type(base), "newCorporation - Arg#2 (Base corporation/id)")
 	
 	if type(base) == 'string' then
 		AssertEntryExists(modApi.corporations, base, "Corporation", "newCorporation - Arg#2")
@@ -164,11 +116,11 @@ function modApi:newCorporation(id, base)
 end
 
 function modApi:getCorporation(islandNumberOrCorpId)
-	AssertMultiple({'number', 'string'}, type(islandNumberOrCorpId), "getCorporation - Arg#1 (Island number or corporation id)")
+	Assert.Equals({'number', 'string'}, type(islandNumberOrCorpId), "getCorporation - Arg#1 (Island number or corporation id)")
 	
 	if type(islandNumberOrCorpId) == 'number' then
 		local islandNumber = islandNumberOrCorpId
-		AssertRange(1, 4, islandNumber, "getCorporation - Arg#1 (Island number)")
+		Assert.Range(1, 4, islandNumber, "getCorporation - Arg#1 (Island number)")
 		
 		local corp_id = vanillaCorporations[islandNumber]
 		return _G[corp_id]
@@ -182,9 +134,9 @@ function modApi:getCorporation(islandNumberOrCorpId)
 end
 
 function modApi:setCorporation(islandNumber, corp)
-	AssertEquals('number', type(islandNumber), "setCorporation - Arg#1 (Island number)")
-	AssertRange(1, 4, islandNumber, "setCorporation - Arg#1 (Island number)")
-	AssertMultiple({'table', 'string'}, type(corp), "setCorporation - Arg#2 (Corporation)")
+	Assert.Equals('number', type(islandNumber), "setCorporation - Arg#1 (Island number)")
+	Assert.Range(1, 4, islandNumber, "setCorporation - Arg#1 (Island number)")
+	Assert.Equals({'table', 'string'}, type(corp), "setCorporation - Arg#2 (Corporation)")
 	
 	if type(corp) == 'string' then
 		AssertEntryExists(modApi.corporations, corp, "Corporation", "setCorporation - Arg#2 (Corporation id)")
