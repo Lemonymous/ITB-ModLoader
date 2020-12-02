@@ -1,42 +1,4 @@
 
-local function AssertMultiple(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .."Expected "
-	
-	for i = 1, #expected do
-		msg = string.format("%s'%s'", msg, tostring(expected[i]))
-		if #expected > i then
-			if #expected - i == 1 then
-				msg = msg .." or "
-			else
-				msg = msg ..", "
-			end
-		end
-	end
-	
-	msg = string.format("%s, but was '%s'", msg, tostring(actual))
-	
-	local result = false
-	for _, e in ipairs(expected) do
-		if e == actual then
-			result = true
-			break
-		end
-	end
-	
-	assert(result, msg)
-end
-
-local function AssertEquals(expected, actual, msg)
-	msg = (msg and msg .. ": ") or ""
-	msg = msg .. string.format("Expected '%s', but was '%s'", tostring(expected), tostring(actual))
-	assert(expected == actual, msg)
-end
-
-local function AssertRange(from, to, actual, msg)
-	assert(actual >= from and actual <= to, string.format("%s: Expected value in range [%s,%s], but was %s", msg, from, to, actual))
-end
-
 local function AssertIsUniqueId(isUnique, id, msg)
 	msg = (msg and msg .. ": ") or ""
 	msg = string.format("%s Id '%s' is already taken", msg, id)
@@ -70,14 +32,14 @@ function template_enemyList:GetId()
 end
 
 function template_enemyList:SetCategories(categories)
-	AssertEquals(6, #categories, "SetCategories - Arg#1 (number of categories)")
+	Assert.Equals(6, #categories, "SetCategories - Arg#1 (number of categories)")
 	
 	self.Categories = categories
 end
 
 function template_enemyList:AddEnemy(enemy, category)
-	AssertEquals('string', type(enemy), "AddEnemy - Arg#1 (enemy id)")
-	AssertEquals('string', type(enemy), "AddEnemy - Arg#1 (enemy category; 'Core', 'Leaders' or 'Unique')")
+	Assert.Equals('string', type(enemy), "AddEnemy - Arg#1 (enemy id)")
+	Assert.Equals('string', type(enemy), "AddEnemy - Arg#1 (enemy category; 'Core', 'Leaders' or 'Unique')")
 	
 	self.Enemies[category] = self.Enemies[category] or {}
 	table.insert(self.Enemies[category], enemy)
@@ -153,7 +115,7 @@ function template_enemyList:PickEnemies(islandNumber, timesPicked)
 		table.insert(result, choice)
 	end
 	
-	AssertEquals(6, #result, "PickEnemies - Resulting number of enemies")
+	Assert.Equals(6, #result, "PickEnemies - Resulting number of enemies")
 	
 	return result
 end
@@ -165,9 +127,9 @@ end
 modApi.enemyLists = {}
 
 function modApi:newEnemyList(id, base)
-	AssertEquals('string', type(id), "newEnemyList - Arg#1 (Enemy list id)")
+	Assert.Equals('string', type(id), "newEnemyList - Arg#1 (Enemy list id)")
 	AssertIsUniqueId(modApi.enemyLists[id] == nil, id, "newEnemyList - Arg#1 (Enemy list id)")
-	AssertMultiple({'nil', 'table', 'string'}, type(base), "newEnemyList - Arg#2 (Base enemy list/id)")
+	Assert.Equals({'nil', 'table', 'string'}, type(base), "newEnemyList - Arg#2 (Base enemy list/id)")
 	
 	if type(base) == 'string' then
 		AssertEntryExists(modApi.enemyLists, base, "EnemyList", "newEnemyList - Arg#2")
@@ -191,7 +153,7 @@ function modApi:newEnemyList(id, base)
 end
 
 function modApi:getEnemyList(enemyListIdOrIslandNumber)
-	AssertMultiple({'number', 'string'}, type(enemyListIdOrIslandNumber), "getEnemyList - Arg#1 (Island number or enemy list id)")
+	Assert.Equals({'number', 'string'}, type(enemyListIdOrIslandNumber), "getEnemyList - Arg#1 (Island number or enemy list id)")
 	
 	if type(enemyListIdOrIslandNumber) == 'number' then
 		local islandNumber = enemyListIdOrIslandNumber
