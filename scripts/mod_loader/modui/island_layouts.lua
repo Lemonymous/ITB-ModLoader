@@ -26,6 +26,14 @@ deco.surfaces.minimizeboxChecked = sdlext.getSurface({ path = "resources/mods/ui
 deco.surfaces.minimizeboxUnchecked = sdlext.getSurface({ path = "resources/mods/ui/minimizebox-unchecked.png" })
 deco.surfaces.minimizeboxHoveredChecked = sdlext.getSurface({ path = "resources/mods/ui/minimizebox-hovered-checked.png" })
 deco.surfaces.minimizeboxHoveredUnchecked = sdlext.getSurface({ path = "resources/mods/ui/minimizebox-hovered-unchecked.png" })
+deco.surfaces.complexityChecked = sdlext.getSurface({ path = "resources/mods/ui/complexity-checked.png" })
+deco.surfaces.complexityUnchecked = sdlext.getSurface({ path = "resources/mods/ui/complexity-unchecked.png" })
+deco.surfaces.complexityHoveredChecked = sdlext.getSurface({ path = "resources/mods/ui/complexity-hovered-checked.png" })
+deco.surfaces.complexityHoveredUnchecked = sdlext.getSurface({ path = "resources/mods/ui/complexity-hovered-unchecked.png" })
+deco.surfaces.randomizeChecked = sdlext.getSurface({ path = "resources/mods/ui/randombox.png" })
+deco.surfaces.randomizeHoveredChecked = sdlext.getSurface({ path = "resources/mods/ui/randombox-hovered.png" })
+deco.surfaces.editbox = sdlext.getSurface({ path = "resources/mods/ui/edit.png" })
+deco.surfaces.editboxHovered = sdlext.getSurface({ path = "resources/mods/ui/edit-hovered.png" })
 
 -- TODO
 --[[function loadIslandOrder()
@@ -97,7 +105,7 @@ local function createUi()
 	}
 	
 	local header = {
-		size = math.vec2(0, 25),
+		size = math.vec2(25, 25),
 		padding = box.padding,
 		border = box.border
 	}
@@ -105,10 +113,10 @@ local function createUi()
 	local function UiHeader(text)
 		return Ui()
 			:width(1):heightpx(header.size.h + 2*header.padding)
-			:decorate({
+			:decorate{
 				DecoFrame(deco.colors.buttonhl, nil, box.border),
 				DecoText(text, deco.uifont.title.font, deco.uifont.title.set)
-			})
+			}
 			:padding(header.padding)
 	end
 	
@@ -168,12 +176,20 @@ local function createUi()
 		elements.top.layout = UiBoxLayout()
 			:width(1):height(1)
 			:anchor("center", "top")
-			:hgap(math.min(box.size.w, (screen:w() - (8*box.size.w)) / 4))
+			--:hgap(math.min(box.size.w, (screen:w() - (8*box.size.w)) / 4))
+			:hgap(box.padding)
 			:addTo(elements.top.area)
 			
-		local function addSlotContainer(text)
-			local island_layout = {}
+		local function addSlotContainer(island_id)
+			local island_layout = {
+				buttons = {}
+			}
 			table.insert(elements.island_layouts, island_layout)
+			
+			local island = modApi:getIsland(island_id) or modApi:getIsland("grass")
+			local corporation = island and modApi:getCorporation(island.Corp) or Corp_Grass
+			local tileset = corporation and modApi:getTileset(corporation.Tileset) or modApi:getTileset("grass")
+			local enemylist = island and modApi:getEnemyList(island.EnemyList) or modApi:getEnemyList("grass")
 			
 			island_layout.area = UiWeightLayout()
 				:widthpx(2*box.size.w):height(1)
@@ -181,42 +197,117 @@ local function createUi()
 				:vgap(0):hgap(0)
 				:addTo(elements.top.layout)
 				
-			island_layout.header = UiHeader(text)
+			island_layout.header = UiHeader(corporation.Bark_Name)
 				:addTo(island_layout.area)
+				
+			island_layout.buttons.randomize = UiCheckbox()
+				:widthpx(deco.surfaces.randomizeChecked:w())
+				:heightpx(deco.surfaces.randomizeChecked:h())
+				:anchor("right")
+				:settooltip("Randomize island when restarting the game\n\nIslands will not change if there is an active save file")
+				:decorate{
+					DecoCheckbox(
+						deco.surfaces.randomizeChecked,
+						deco.surfaces.checkboxUnchecked,
+						deco.surfaces.randomizeHoveredChecked,
+						deco.surfaces.checkboxHoveredUnchecked)
+				}
+				:addTo(island_layout.header)
 				
 			island_layout.flow = UiFlowLayout()
 				:width(1):height(1)
 				:hgap(0):vgap(0)
 				:addTo(island_layout.area)
 			
-			local function addSlot()
+			local function UiSlot()
 				return Ui()
 					:widthpx(box.size.w):heightpx(box.size.h)
-					:decorate({ DecoFrame(nil, nil, box.border) })
 					:addTo(island_layout.flow)
 			end
 			
-			for i = 1, 4 do
-				island_layout[i] = addSlot()
-			end
+			island_layout[1] = UiSlot()
+				:decorate({
+					DecoFrame(nil, nil, box.border),
+					DecoAnchor(),
+					DecoSurfaceCropped(getIslandBackgroundSurface(), 4),
+					DecoSurfaceCropped(getIslandSurface(island.Id), 4)
+				})
+				
+			island_layout[2] = UiSlot()
+				:decorate{
+					DecoFrame(nil, nil, box.border),
+					DecoAnchor(),
+					DecoSurfaceCropped(getCEOSurface(corporation.Id, 2), 4)
+				}
+				
+			island_layout[3] = UiSlot()
+				:decorate{
+					DecoFrame(nil, nil, box.border),
+					DecoAnchor(),
+					DecoSurfaceCropped(getTilesetSurface(tileset.Id), 4)
+				}
+				
+			island_layout[4] = UiSlot()
+				:decorate{
+					DecoFrame(nil, nil, box.border),
+				}
 		end
 		
-		addSlotContainer("Archive")
-		addSlotContainer("R.S.T.")
-		addSlotContainer("Pinnacle")
-		addSlotContainer("Detritus")
+		-- TODO: fetch current presets
+		addSlotContainer("grass")
+		addSlotContainer("desert")
+		addSlotContainer("snow")
+		addSlotContainer("factory")
 		
 		-- BOTTOM AREA --
 		-----------------
 		
-		elements.bottom.area = Ui()
+		elements.bottom.area = UiWeightLayout()
 			:width(1):height(1)
-			:decorate({ DecoFrame(nil, nil, box.border) })
+			:vgap(0):hgap(0)
 			:addTo(elements.main.area)
-		
+			
+		elements.bottom.left = Ui()
+			:widthpx(header.size.w + 2*header.padding):height(1)
+			:decorate{ DecoFrame(deco.colors.buttonhl, nil, box.border) }
+			:padding(header.padding)
+			:addTo(elements.bottom.area)
+			
+		elements.bottom.complexity = UiCheckbox()
+			:widthpx(deco.surfaces.complexityChecked:w())
+			:heightpx(deco.surfaces.complexityChecked:h())
+			:settooltip("Toggle complexity")
+			:decorate{
+				DecoCheckbox(
+					deco.surfaces.complexityChecked,
+					deco.surfaces.complexityUnchecked,
+					deco.surfaces.complexityHoveredChecked,
+					deco.surfaces.complexityHoveredUnchecked)
+			}
+			:addTo(elements.bottom.left)
+			
+		elements.bottom.randomize = UiCheckbox()
+			:setypx(deco.surfaces.complexityChecked:h() + box.padding)
+			:widthpx(deco.surfaces.randomizeChecked:w())
+			:heightpx(deco.surfaces.randomizeChecked:h())
+			:settooltip("Randomize all islands when restarting the game\n\nIslands will not change if there is an active save file")
+			:decorate{
+				DecoCheckbox(
+					deco.surfaces.randomizeChecked,
+					deco.surfaces.randomizeUnchecked,
+					deco.surfaces.randomizeHoveredChecked,
+					deco.surfaces.randomizeHoveredUnchecked)
+			}
+			:addTo(elements.bottom.left)
+			
+		elements.bottom.right = Ui()
+			:width(1):height(1)
+			:decorate{ DecoFrame(nil, nil, box.border) }
+			:addTo(elements.bottom.area)
+			
 		elements.bottom.scroll = UiScrollArea()
 			:width(1):height(1)
-			:addTo(elements.bottom.area)
+			:addTo(elements.bottom.right)
 			
 		elements.bottom.layout = UiBoxLayout()
 			:width(1):height(1)
@@ -239,7 +330,7 @@ local function createUi()
 				
 			element.flow = UiFlowLayout()
 				:height(1):width(1)
-				:decorate({ DecoFrame(nil, nil, box.border) })
+				:decorate{ DecoFrame(nil, nil, box.border) }
 				:padding(box.padding)
 				:addTo(element.area)
 		end
@@ -251,16 +342,17 @@ local function createUi()
 		
 		local function addMinimizeBox(element)
 			local button = UiCheckbox()
-				:heightpx(deco.surfaces.minimizeboxChecked:w())
-				:widthpx(deco.surfaces.minimizeboxChecked:h())
+				:widthpx(deco.surfaces.minimizeboxChecked:w())
+				:heightpx(deco.surfaces.minimizeboxChecked:h())
 				:anchor("right")
-				:decorate({
+				:settooltip("Minimize")
+				:decorate{
 					DecoCheckbox(
 						deco.surfaces.minimizeboxChecked,
 						deco.surfaces.minimizeboxUnchecked,
 						deco.surfaces.minimizeboxHoveredChecked,
 						deco.surfaces.minimizeboxHoveredUnchecked)
-				})
+				}
 				:addTo(element.header)
 			
 			function button:onclicked()
@@ -281,7 +373,22 @@ local function createUi()
 		addMinimizeBox(elements.tileset)
 		addMinimizeBox(elements.enemylist)
 		
-		local function addIconTo(element)
+		local editButton = Ui()
+			:setxpx(deco.surfaces.editbox:w() + box.padding)
+			:widthpx(deco.surfaces.editbox:w())
+			:heightpx(deco.surfaces.editbox:h())
+			:anchor("right")
+			:settooltip("Edit EnemyLists")
+			:decorate{
+				DecoCheckbox(
+					nil,
+					deco.surfaces.editbox,
+					nil,
+					deco.surfaces.editboxHovered)
+			}
+			:addTo(elements.enemylist.header)
+		
+		local function UiItem(element)
 			local icon = Ui()
 				:widthpx(box.size.h):heightpx(box.size.w)
 				:addTo(element)
@@ -311,36 +418,39 @@ local function createUi()
 		end
 		
 		for _, island in pairs(modApi.islands) do
-			local element = addIconTo(elements.island.flow)
-			element:decorate({
-				DecoButton(),
-				DecoAnchor(),
-				DecoSurfaceCropped(getIslandBackgroundSurface(), 4),
-				DecoSurfaceCropped(getIslandSurface(island.Id), 4)
-			})
+			local element = UiItem(elements.island.flow)
+				:settooltip(island.Id)
+				:decorate{
+					DecoButton(),
+					DecoAnchor(),
+					DecoSurfaceCropped(getIslandBackgroundSurface(), 4),
+					DecoSurfaceCropped(getIslandSurface(island.Id), 4)
+				}
 		end
 		
 		for _, corporation in pairs(modApi.corporations) do
-			local element = addIconTo(elements.corporation.flow)
-			element:decorate({
-				DecoButton(),
-				DecoAnchor(),
-				DecoSurfaceCropped(getCEOSurface(corporation.Id, 2), 4)
-			})
+			local element = UiItem(elements.corporation.flow)
+				:settooltip(corporation.Id)
+				:decorate{
+					DecoButton(),
+					DecoAnchor(),
+					DecoSurfaceCropped(getCEOSurface(corporation.Id, 2), 4)
+				}
 		end
 		
 		for _, tileset in pairs(modApi.tilesets) do
-			local element = addIconTo(elements.tileset.flow)
-			element:settooltip(tileset.Id)
-			element:decorate({
-				DecoButton(deco.colors.dialogbg),
-				DecoAnchor(),
-				DecoSurfaceCropped(getTilesetSurface(tileset.Id), 4)
-			})
+			local element = UiItem(elements.tileset.flow)
+				:settooltip(tileset.Id)
+				:decorate{
+					DecoButton(deco.colors.dialogbg),
+					DecoAnchor(),
+					DecoSurfaceCropped(getTilesetSurface(tileset.Id), 4)
+				}
 		end
 		
 		for _, enemylist in pairs(modApi.enemyLists) do
-			local element = addIconTo(elements.enemylist.flow)
+			local element = UiItem(elements.enemylist.flow)
+				:settooltip(enemylist.Id)
 		end
 		
 		ui:relayout()
