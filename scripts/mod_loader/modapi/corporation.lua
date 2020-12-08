@@ -82,6 +82,20 @@ function template_corp:SetCEO(path_ceo_image, personality)
 	modApi:appendAsset(string.format("img/portraits/ceo/%s.png", self:GetId()), modPath .. path_ceo_image)
 end
 
+function template_corp:CopyAssets(corp_id)
+	AssertEntryExists(modApi.corporations, corp_id, "Corporation", "CopyAssets - Arg#1 (corp id)")
+	
+	if corp_id == self:GetId() then
+		return
+	end
+	
+	local to = modApi.corporations[corp_id]
+	
+	modApi:copyAsset(string.format("img/ui/corps/%s.png", self.Office), string.format("img/ui/corps/%s.png", to.Office))
+	modApi:copyAsset(string.format("img/ui/corps/%s_small.png", self.Office), string.format("img/ui/corps/%s_small.png", to.Office))
+	modApi:copyAsset(string.format("img/portraits/ceo/%s", self.CEO_Image), string.format("img/portraits/ceo/%s", to.CEO_Image))
+end
+
 local vanillaCorporations = {
 	"Corp_Grass",
 	"Corp_Desert",
@@ -110,6 +124,10 @@ function modApi:newCorporation(id, base)
 		if i ~= '__index' then
 			corp[i] = shallow_copy(corp[i])
 		end
+	end
+	
+	if base ~= nil then
+		corp:CopyAssets(base.Id)
 	end
 	
 	return corp
