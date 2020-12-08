@@ -347,7 +347,7 @@ local function createUi()
 	end)
 end
 
-function ArrangeIslands()
+function ConfigureIslandLayouts()
 	-- TODO
 	--loadIslandOrder()
 

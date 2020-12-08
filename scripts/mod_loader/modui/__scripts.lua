@@ -19,7 +19,7 @@ local scripts = {
 	
 	"mod_configuration",
 	"pilot_arrange",
-	"island_arrange",
+	"island_layouts",
 	"squad_selector",
 	"weapon_deck_selector",
 	"modloader_configuration",

@@ -19,7 +19,7 @@ function sdlext.executeAddModContent()
 
 	sdlext.addModContent(
 		GetText("ModContent_Button_IslandLayout"),
-		ArrangeIslands,
+		ConfigureIslandLayouts,
 		GetText("ModContent_ButtonTooltip_IslandLayout")
 	)
 
