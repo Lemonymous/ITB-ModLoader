@@ -50,7 +50,7 @@ return {
 	["ConfigureWeaponDeck_PresetSave_Title"] = "Save",
 	["ConfigureWeaponDeck_PresetSave_Tooltip"] = "Saves the current weapons to the selected preset. If nothing is checked, deletes the current preset.",
 	
-	["ModContent_Button_IslandLayout"] = "Island Layout",
+	["ModContent_Button_IslandLayout"] = "Island Layouts",
 	["ModContent_ButtonTooltip_IslandLayout"] = "Select which 4 islands will be available in a new game.\n\nAny modifications will require a restart to take effect.",
 
 	["ModContent_Button_ModLoaderConfig"] = "Configure Mod Loader",
