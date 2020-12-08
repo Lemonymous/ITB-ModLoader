@@ -18,6 +18,12 @@ function sdlext.executeAddModContent()
 	)
 
 	sdlext.addModContent(
+		GetText("ModContent_Button_IslandLayout"),
+		ArrangeIslands,
+		GetText("ModContent_ButtonTooltip_IslandLayout")
+	)
+
+	sdlext.addModContent(
 		GetText("ModContent_Button_ConfigureWeaponDeck"),
 		ConfigureWeaponDeck,
 		GetText("ModContent_ButtonTooltip_ConfigureWeaponDeck")
