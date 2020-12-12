@@ -47,7 +47,7 @@ function template_corp:SetTileset(tilesetOrId)
 end
 
 function template_corp:GetTileset()
-	return self.Tileset
+	return type(self.Tileset) == 'string' and modApi:getTileset(self.Tileset) or nil
 end
 
 function template_corp:SetOffice(path_office_large, path_office_small)
