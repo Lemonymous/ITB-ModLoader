@@ -135,7 +135,7 @@ function template_island:SetCorporation(corpOrIdOrIslandNumber)
 end
 
 function template_island:GetCorporation()
-	return self.Corp and modApi:getCorporation(self.Corp) or nil
+	return type(self.Corp) == 'string' and modApi:getCorporation(self.Corp) or nil
 end
 
 function template_island:CopyAssets(island_id)
