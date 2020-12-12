@@ -135,6 +135,9 @@ function mod_loader:loadAdditionalSprites()
 	for i, id in ipairs(vanillaIslands) do
 		modApi:copyIslandAssets(tostring(i-1), id)
 	end
+	
+	modApi:appendAsset("img/strategy/corp/volcano_env.png", baseDir.."img/strategy/corp/volcano_env.png")
+	modApi:appendAsset("img/strategy/corp/lava_env.png", baseDir.."img/strategy/corp/lava_env.png")
 end
 
 function mod_loader:enumerateMods(dirPathRelativeToGameDir)
