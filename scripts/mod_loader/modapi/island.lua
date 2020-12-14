@@ -27,7 +27,7 @@ local vanillaIslands = {
 	"desert",
 	"snow",
 	"factory",
-	"volcano"
+	--"volcano"
 }
 
 local Island_Shifts = {
