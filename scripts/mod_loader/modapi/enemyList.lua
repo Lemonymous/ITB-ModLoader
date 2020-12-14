@@ -1,12 +1,16 @@
 
+local function traceback()
+	return Assert.Traceback and debug.traceback("\n", 3) or ""
+end
+
 local function AssertIsUniqueId(isUnique, id, msg)
 	msg = (msg and msg .. ": ") or ""
-	msg = string.format("%s Id '%s' is already taken", msg, id)
+	msg = string.format("%s Id '%s' is already taken%s", msg, id, traceback())
 	assert(isUnique, msg)
 end
 
 local function AssertEntryExists(tbl, entry, name, msg)
-	assert(tbl[entry] ~= nil, string.format("%s: %s '%s' could not be found. List of current valid %ss:\n%s", msg, name, entry, string.lower(name), save_table(tbl, 0)))
+	assert(tbl[entry] ~= nil, string.format("%s: %s '%s' could not be found. List of current valid %ss:\n%s%s", msg, name, entry, string.lower(name), save_table(tbl, 0), traceback()))
 end
 
 function shuffle_list(list)
