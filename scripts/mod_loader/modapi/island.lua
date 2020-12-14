@@ -1,21 +1,25 @@
 
+local function traceback()
+	return Assert.Traceback and debug.traceback("\n", 3) or ""
+end
+
 local function AssertTableHasFields(expected, actual, msg)
 	msg = (msg and msg .. ": ") or ""
-	assert(type(actual) == 'table', string.format("%sExpected 'table', but was '%s'", msg, type(actual)))
+	assert(type(actual) == 'table', string.format("%sExpected 'table', but was '%s'%s", msg, type(actual), traceback()))
 	
 	for key, value in pairs(expected) do
-		assert(value == type(actual[key]), string.format("%sExpected field '%s' to be '%s', but was '%s'", msg, key, value, type(actual[key])))
+		assert(value == type(actual[key]), string.format("%sExpected field '%s' to be '%s', but was '%s'%s", msg, key, value, type(actual[key]), traceback()))
 	end
 end
 
 local function AssertIsUniqueId(isUnique, id, msg)
 	msg = (msg and msg .. ": ") or ""
-	msg = string.format("%s Id '%s' is already taken", msg, id)
+	msg = string.format("%s Id '%s' is already taken%s", msg, id, traceback())
 	assert(isUnique, msg)
 end
 
 local function AssertEntryExists(tbl, entry, name, msg)
-	assert(tbl[entry] ~= nil, string.format("%s: %s '%s' could not be found. List of current valid %ss:\n%s", msg, name, entry, string.lower(name), save_table(tbl, 0)))
+	assert(tbl[entry] ~= nil, string.format("%s: %s '%s' could not be found. List of current valid %ss:\n%s%s", msg, name, entry, string.lower(name), save_table(tbl, 0), traceback()))
 end
 
 local vanillaIslands = {
