@@ -288,7 +288,6 @@ for i, id in ipairs(vanillaIslands) do
 	
 	island.Shift = Island_Shifts[i]
 	island.Magic = Island_Magic[i]
-	--island.Location = Island_Locations[i]
 	island.Data = {}
 	island.Network = {}
 	
@@ -309,9 +308,5 @@ for i, id in ipairs(vanillaIslands) do
 	
 	island:SetEnemyList(id)
 	
-	-- Island assets will be copied in mod_loader.loadAdditionalSprites
-	--modApi:copyIslandAssets(tostring(n), id)
-	
-	modApi.islands[id] = island
 	Islands[i] = island
 end
