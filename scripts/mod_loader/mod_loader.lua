@@ -95,6 +95,7 @@ function mod_loader:init()
 	fireHooksSafely(modApi.modsInitializedHooks, "A modsInitializedHook failed: ")
 	modApi.modsInitializedHooks = nil
 	
+	setupIslands()
 	modApi:finalize()
 
 	self:loadPilotList()
