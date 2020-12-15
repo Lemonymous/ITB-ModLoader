@@ -207,7 +207,7 @@ function startNewGame()
 	
 	local timesPicked = {}
 	for i = 1, 5 do
-		local island = modApi:getIsland(i)
+		local island = Islands[i]
 		local enemyList = island:GetEnemyList()
 		
 		if enemyList ~= nil then

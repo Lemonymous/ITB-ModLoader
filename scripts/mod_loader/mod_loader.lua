@@ -129,7 +129,7 @@ function mod_loader:loadAdditionalSprites()
 		"desert",
 		"snow",
 		"factory",
-		--"volcano" -- this island is an outlier and would require additional logic to be included
+		"volcano"
 	}
 	
 	for i, id in ipairs(vanillaIslands) do

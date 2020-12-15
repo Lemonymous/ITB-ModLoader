@@ -27,7 +27,7 @@ local vanillaIslands = {
 	"desert",
 	"snow",
 	"factory",
-	--"volcano"
+	"volcano"
 }
 
 local Island_Shifts = {
@@ -179,14 +179,21 @@ function modApi:copyIslandAssets(from, to)
 	Assert.ResourceDatIsOpen("copyIslandAssets")
 	
 	local root = "img/strategy/"
-	
-	modApi:copyAsset(string.format("%sisland%s.png", root, from), string.format("%sisland%s.png", root, to))
-	modApi:copyAsset(string.format("%sisland1x_%s.png", root, from), string.format("%sisland1x_%s.png", root, to))
-	modApi:copyAsset(string.format("%sisland1x_%s_out.png", root, from), string.format("%sisland1x_%s_out.png", root, to))
+	local sources = {
+		[string.format("%sisland%s.png", root, from)] = string.format("%sisland%s.png", root, to),
+		[string.format("%sisland1x_%s.png", root, from)] = string.format("%sisland1x_%s.png", root, to),
+		[string.format("%sisland1x_%s_out.png", root, from)] = string.format("%sisland1x_%s_out.png", root, to)
+	}
 	
 	for k = 0, 7 do
-		modApi:copyAsset(string.format("%sislands/island_%s_%s.png", root, from, k), string.format("%sislands/island_%s_%s.png", root, to, k))
-		modApi:copyAsset(string.format("%sislands/island_%s_%s_OL.png", root, from, k), string.format("%sislands/island_%s_%s_OL.png", root, to, k))
+		sources[string.format("%sislands/island_%s_%s.png", root, from, k)] = string.format("%sislands/island_%s_%s.png", root, to, k)
+		sources[string.format("%sislands/island_%s_%s_OL.png", root, from, k)] = string.format("%sislands/island_%s_%s_OL.png", root, to, k)
+	end
+	
+	for i, v in pairs(sources) do
+		if modApi:assetExists(i) then
+			modApi:copyAsset(i, v)
+		end
 	end
 end
 
@@ -295,6 +302,9 @@ for i, id in ipairs(vanillaIslands) do
 		end
 		
 		island:SetCorporation(i)
+	elseif i == 5 then
+		island:SetCorporation(2)
+		modApi.islands[id] = nil
 	end
 	
 	island:SetEnemyList(id)
