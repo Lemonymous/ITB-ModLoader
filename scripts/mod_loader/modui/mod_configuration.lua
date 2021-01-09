@@ -356,13 +356,11 @@ local function createUi()
 			end
 		end
 		
-		function sortDropdown:destroyDropDown()
-			UiDropDown.destroyDropDown(self)
+		function sortDropdown:onDropDownChoice(choice, value)
 			sortMods()
 		end
 		
-		function sortEnabledModsDropdown:destroyDropDown()
-			UiDropDown.destroyDropDown(self)
+		function sortEnabledModsDropdown:onDropDownChoice(choice, value)
 			sortMods()
 		end
 		
