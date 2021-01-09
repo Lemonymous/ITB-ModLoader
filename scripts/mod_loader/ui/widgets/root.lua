@@ -3,30 +3,22 @@ UiRoot = Class.inherit(Ui)
 function UiRoot:new()
 	Ui.new(self)
 	
+	self.childrenContainingMouse = {}
 	self.hoveredchild = nil
 	self.pressedchild = nil
+	self.draggedchild = nil
 	self.focuschild = self
 	self.translucent = true
-	self.tooltipUi = UiTooltip():addTo(self)
+	
+	self.tooltipUi = UiTooltip():setSwappable(false):addTo(self)
+	self.dropDownUi = Ui():width(1):height(1):setSwappable(false):addTo(self)
+	self.dropDownUi.translucent = true
 end
 
 function UiRoot:draw(screen)
 	self:relayout()
 
-	-- Temporary hack until I figure out how to
-	-- update tooltip frame strata without causing flickering
-	if self.tooltipUi.visible then
-		self.tooltipUi:bringToTop()
-	end
-
 	Ui.draw(self, screen)
-	
-	if self.currentDropDown then
-		self:add(self.currentDropDown)
-		self:relayout()
-		self.currentDropDown:draw(screen)
-		table.remove(self.children)
-	end
 end
 
 function UiRoot:setfocus(newfocus)
@@ -55,23 +47,21 @@ function UiRoot:setfocus(newfocus)
 	return true
 end
 
-function UiRoot:dropdownEvent(x,y)
-	if
-		self.currentDropDown and
-		rect_contains(
-			self.currentDropDown.screenx,
-			self.currentDropDown.screeny,
-			self.currentDropDown.w,
-			self.currentDropDown.h,
-			x, y
-		)
-	then
-		self:add(self.currentDropDown)
-		self:relayout()
-		return true
+function UiRoot:cleanupDropdown()
+	for i = #self.dropDownUi.children, 1, -1 do
+		local dropDown = self.dropDownUi.children[i]
+		
+		local parent = dropDown.owner
+		while parent.parent do
+			-- fetch root of dropDown
+			parent = parent.parent
+		end
+		
+		-- if owner is not attached to root, remove dropDown
+		if parent ~= self then
+			table.remove(self.dropDownUi.children, i)
+		end
 	end
-
-	return false
 end
 
 function UiRoot:event(eventloop)
@@ -82,73 +72,106 @@ function UiRoot:event(eventloop)
 	local my = sdl.mouse.y()
 	
 	if type == sdl.events.mousewheel then
-		if self:dropdownEvent(mx, my) then
-			local done = self.currentDropDown:wheel(mx, my, eventloop:wheel())
-			table.remove(self.children)
-			if done then
-				return done
-			end
-		end
-
 		return self:wheel(mx, my, eventloop:wheel())
 	end
 
 	if type == sdl.events.mousebuttondown then
 		local button = eventloop:mousebutton()
 		self:setfocus(nil)
-		local done = self:mousedown(mx, my, button)
-		if self:dropdownEvent(mx, my) then
-			done = self.currentDropDown:mousedown(mx, my, button) or done
-			table.remove(self.children)
+		
+		local res = self:mousedown(mx, my, button)
+		
+		-- inform open dropDownUi's of mouse down event,
+		-- even if the mouse click was outside of its area,
+		-- in order to allow them to close
+		for _, dropDown in ipairs(self.dropDownUi.children) do
+			if not dropDown.containsMouse then
+				dropDown:mousedown(mx, my, button)
+			end
 		end
-		return done
+		
+		self:cleanupDropdown()
+		
+		return res
 	end
 	
 	if type == sdl.events.mousebuttonup then
 		local button = eventloop:mousebutton()
-		local child = self.pressedchild
-
-		local dEvent = self:dropdownEvent(mx, my)
-		if
-			self.currentDropDown and self.currentDropDownOwner ~= child and
-			not dEvent
-		then
-			-- destroy the dropdown if we click somewhere away from it
-			self.currentDropDownOwner.hovered = false
-			self.currentDropDownOwner:destroyDropDown()
-		end
-		if dEvent then table.remove(self.children) end
 		
-		-- Notify pressed children of the event, even if the mouse is released
-		-- outside of them.
-		if self.pressedchild and self.pressedchild:mouseup(mx, my, button) then
-			self.pressedchild = nil
-			return true
+		-- reset hoveredchild
+		if self.hoveredchild ~= nil then
+			self.hoveredchild.hovered = false
+			self.hoveredchild = nil
 		end
-
+		
+		-- call mouseup for all eligible objects
 		local res = self:mouseup(mx, my, button)
-		self.pressedchild = nil
+		
+		-- if pressedchild has not been released, release it now
+		local pressedchild = self.pressedchild
+		if pressedchild then
+			self.pressedchild = nil
+			pressedchild.pressed = false
+			pressedchild:mouseup(mx, my, button)
+		end
+		
+		self:cleanupDropdown()
+		
 		return res
 	end
 	
 	if type == sdl.events.mousemotion then
+		local handled = false
+		
+		-- reset hoveredchild
 		if self.hoveredchild ~= nil then
 			self.hoveredchild.hovered = false
+			self.hoveredchild = nil
 		end
-		self.hoveredchild = nil
+		
 		self.tooltip = ""
-
+		
+		-- handle pressed element first in order to update any possible location changes
 		if self.pressedchild ~= nil then
-			return self.pressedchild:mousemove(mx, my)
+			local pressedchild = self.pressedchild
+			
+			if
+				not pressedchild.disabled    and
+				not pressedchild.ignoreMouse and
+				pressedchild.visible
+			then
+				pressedchild:mousemove(mx, my)
+			else
+				self.pressedchild = nil
+				pressedchild.pressed = false
+				pressedchild:mouseup(mx, my, 1)
+			end
 		end
 		
-		if self:dropdownEvent(mx,my) then
-			local handled = self.currentDropDown:mousemove(mx, my)
-			table.remove(self.children)
-			return handled
+		-- update 'containsMouse' for elements that contained the mouse on the last frame
+		for i = #self.childrenContainingMouse, 1, -1 do
+			local child = self.childrenContainingMouse[i]
+			child.containsMouse =
+				child.visible and
+				not child.ignoreMouse and
+				rect_contains(
+					child.screenx,
+					child.screeny,
+					child.w,
+					child.h,
+					mx, my
+				)
+			
+			if not child.containsMouse then
+				table.remove(self.childrenContainingMouse, i)
+				child:mouseExited()
+			end
 		end
 		
-		return self:mousemove(mx, my)
+		-- handle normal mouse movement
+		handled = self:mousemove(mx, my) or handled
+		
+		return handled
 	end
 
 	if type == sdl.events.keydown then

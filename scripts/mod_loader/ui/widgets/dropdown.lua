@@ -22,21 +22,6 @@ function UiDropDown:new(values,strings,value)
 		self.value = values[1]
 	end
 	self.open = false
-end
-
-function UiDropDown:destroyDropDown()
-	self.open = false
-	self.root.currentDropDown = nil
-	self.root.currentDropDownOwner = nil
-end
-
-function UiDropDown:createDropDown()
-	self:relayout()
-	if self.root.currentDropDown then
-		self.root.currentDropDownOwner:destroyDropDown()
-	end
-	
-	self.open = true
 	
 	local items = {}
 	
@@ -62,27 +47,50 @@ function UiDropDown:createDropDown()
 				self.choice = i
 				self.value = self.values[i]
 				
+				self:onDropDownChoice(self.choice, self.value)
 				self:destroyDropDown()
-				self.hovered = false
 				return true
 			end
 			return false
 		end
 	end
 	
+	local function destroyDropDown()
+		self:destroyDropDown()
+	end
+	
+	local function mousedown(dropDown, mx, my, button)
+		
+		if
+			button == 1                      and
+			self.open                        and
+			not self.containsMouse           and
+			not dropDown.containsMouse
+		then
+			self:destroyDropDown()
+			
+		elseif button == 3 and self.open then
+			self:destroyDropDown()
+		end
+		
+		return Ui.mousedown(dropDown, mx, my, button)
+	end
+	
 	local ddw = math.max(max_w + 8, 210)
-	local dropDown = Ui()
+	self.dropDown = Ui()
 		:pospx(
 			self.rect.x + self.w - ddw,
-			self.rect.y + self.h + 2
-		)
+			self.rect.y + self.h + 2)
 		:widthpx(ddw)
 		:heightpx(math.min(2 + #self.values * 40, 210))
 		:decorate({ DecoFrame(nil, nil, 1) })
-
+	self.dropDown.owner = self
+	self.dropDown.destroyDropDown = destroyDropDown
+	self.dropDown.mousedown = mousedown
+	
 	local scrollarea = UiScrollArea()
 		:width(1):height(1)
-		:addTo(dropDown)
+		:addTo(self.dropDown)
 
 	local layout = UiBoxLayout()
 		:vgap(0)
@@ -92,20 +100,42 @@ function UiDropDown:createDropDown()
 	for i, item in ipairs(items) do
 		layout:add(item)
 	end
-	
-	self.root.currentDropDownOwner = self
-	self.root.currentDropDown = dropDown
+end
+
+function UiDropDown:onDropDownChoice(choice, value) end
+
+function UiDropDown:destroyDropDown()
+	self.open = false
+	self.dropDown.visible = false
+end
+
+function UiDropDown:createDropDown()
+	if self.root then
+		if self.dropDown.parent ~= self.root.dropDownUi then
+			self.dropDown:detach()
+		end
+		
+		if self.dropDown.parent == nil then
+			self.dropDown:addTo(self.root.dropDownUi)
+		end
+		
+		local max_w = 32
+		local ddw = math.max(max_w + 8, 210)
+		self.open = true
+		self.dropDown.visible = true
+		self.dropDown.x = self.rect.x + self.w - ddw
+		self.dropDown.y = self.rect.y + self.h + 2
+		
+		self.dropDown.parent:relayout()
+	end
 end
 
 function UiDropDown:draw(screen)
 	if self.open then
-		-- keep the dropdown owner highlighted as long as
-		-- the dropdown is open for additional clarity
-		self.hovered = true
 
 		local oldClip = self.root.clippingrect
 		self.root.clippingrect = nil
-		--We don't want our dropdown to be clipped
+		--We don't want our dropDown to be clipped
 		if oldClip then
 			screen:unclip()
 		end
@@ -118,6 +148,23 @@ function UiDropDown:draw(screen)
 	else
 		Ui.draw(self, screen)
 	end
+end
+
+function UiDropDown:mousedown(mx, my, button)
+	
+	if
+		button == 1                      and
+		self.open                        and
+		not self.containsMouse           and
+		not self.dropDown.containsMouse
+	then
+		self:destroyDropDown()
+		
+	elseif button == 3 and self.open then
+		self:destroyDropDown()
+	end
+	
+	return Ui.mousedown(self, mx, my, button)
 end
 
 function UiDropDown:clicked(button)

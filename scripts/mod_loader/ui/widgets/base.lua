@@ -249,21 +249,16 @@ function Ui:wheel(mx,my,y)
 end
 
 function Ui:mousedown(mx, my, button)
-	if not self.visible then return false end
-	if self.ignoreMouse then return false end
 
+	-- iterate all eligible objects
 	for i=1,#self.children do
 		local child = self.children[i]
-
+		
 		if
-			child.visible      and
-			rect_contains(
-				child.screenx,
-				child.screeny,
-				child.w,
-				child.h,
-				mx, my
-			)
+			not child.disabled     and
+			not child.ignoreMouse  and
+			child.visible          and
+			child.containsMouse
 		then
 			if child:mousedown(mx, my, button) then
 				return true
@@ -271,135 +266,176 @@ function Ui:mousedown(mx, my, button)
 		end
 	end
 
-	if self.root.pressedchild ~= nil then
-		self.root.pressedchild.pressed = false
+	if button == 3 then
+		if self.root.pressedchild then
+			local child = self.root.pressedchild
+			self.root.pressedchild = nil
+			
+			child:setfocus(nil)
+			child.pressed = false
+			
+			-- treat right mouse click as left mouse up
+			-- if an object is being dragged
+			if child.dragged then
+				child:mouseup(mx, my, 1)
+			end
+			
+			return true
+		end
+	elseif button == 1 then
+		-- only hovered objects can be pressed
+		if self.hovered and not self.root.pressedchild then
+			
+			self.root.pressedchild = self
+			-- pass self as arg for UiRoot override
+			self:setfocus(self)
+			self.pressed = true
+
+			if self.draggable then
+				self.dragged = true
+				self:startDrag(mx, my, button)
+			end
+			
+			return true
+		end
 	end
-
-	self.root.pressedchild = self
-	-- pass self as arg for UiRoot override
-	self:setfocus(self)
-	self.pressed = true
-
-	if self.draggable and not self.disabled and button == 1 then
-		self.dragged = true
-		self:startDrag(mx, my, button)
-		return true
-	end
-
-	if self.translucent then return false end
-	return true
+	
+	return false
 end
 
 function Ui:mouseup(mx, my, button)
-	if not self.visible then return false end
-	if self.ignoreMouse then return false end
-
-	local contains = rect_contains(
-		self.screenx,
-		self.screeny,
-		self.w,
-		self.h,
-		mx, my
-	)
-
-	if not contains then
-		self.root.hoveredchild = nil
-		self.hovered = false
-		-- Cleanup the tooltip to prevent flickering when mouse is
-		-- first moved after the release
-		self.root.tooltip = ""
-		self.root.tooltipUi:updateText()
+	local pressedchild
+	local presshandled = false
+	
+	-- translucent objects can not be hovered or interacted with
+	if not self.translucent then
+		-- pass hovered from parent to child
+		if self.parent and self.parent.hovered then
+			self.parent.hovered = false
+			self.root.hoveredchild = nil
+		end
+		
+		-- the first object we find is the hovered object
+		if not self.root.hoveredchild then
+			self.root.hoveredchild = self
+			self.hovered = true
+		end
 	end
-
-	if self.dragged and button == 1 then
-		self.dragged = false
-		self:stopDrag(mx, my, button)
-		return true
-	end
-
-	if
-		self.root.pressedchild == self and
-		self.pressed                   and
-		not self.disabled              and
-		contains
-	then
-		self.pressed = false
-		if self:clicked(button) then return true end
-	end
-
+	
+	-- call mouseup on all eligible objects
 	for i=1,#self.children do
 		local child = self.children[i]
 		
-		if
-			child ~= self.root.pressedchild and
-			child.visible                   and
-			rect_contains(
-				child.screenx,
-				child.screeny,
-				child.w,
-				child.h,
-				mx, my
-			)
+		if child == self.root.pressedchild then
+			-- handle pressed child later, in case
+			-- it leads to fractured ui structure
+			pressedchild = child
+		elseif
+			not child.disabled                  and
+			not child.ignoreMouse               and
+			child.visible                       and
+			child.containsMouse
 		then
 			if child:mouseup(mx, my, button) then
-				return true
+				presshandled = true
 			end
 		end
 	end
-
-	if self.translucent then return false end
-	return true
+	
+	-- only treat button 1 as button press
+	if button == 1 then
+		if not self.root then
+			self.pressed = false
+			self:clicked(button)
+		elseif self == self.root.pressedchild then
+			self.root.pressedchild = nil
+			self.pressed = false
+			self:clicked(button)
+		end
+		
+		if self.dragged then
+			local root = self.root
+			self.dragged = false
+			self:stopDrag(mx, my, button)
+			
+			if root then
+				root.draggedElement = nil
+				root:relayout()
+				root:event({
+					type = function() return sdl.events.mousemotion end
+				})
+			end
+		end
+		
+		presshandled = true
+	end
+	
+	return pressedchild and pressedchild:mouseup(mx, my, button) or presshandled
 end
 
 function Ui:mousemove(mx, my)
-	if not self.visible then return false end
-	if self.ignoreMouse then return false end
-
-	if self.root.hoveredchild ~= nil then
-		self.root.hoveredchild.hovered = false
-	end
-
-	self.root.hoveredchild = self
-	self.hovered = true
-
+	-- handle dragMove regardless of containsMouse or translucent
 	if self.dragged then
 		self:dragMove(mx, my)
 		return true
 	end
-
-	if self.tooltip then
-		self.root.tooltip = self.tooltip
-	end
-
-	for i=1,#self.children do
-		local child = self.children[i]
-		if
-			child ~= self.root.pressedchild and
-			child.visible                   and
-			rect_contains(
-				child.screenx,
-				child.screeny,
-				child.w,
-				child.h,
-				mx, my
-			)
-		then
-			if not child.containsMouse then
-				child.containsMouse = true
-				child:mouseEntered()
+	
+	if
+		self.containsMouse or
+		rect_contains(
+			self.screenx,
+			self.screeny,
+			self.w,
+			self.h,
+			mx, my
+		)
+	then
+		if not self.containsMouse then
+			table.insert(self.root.childrenContainingMouse, self)
+			self.containsMouse = true
+			self:mouseEntered()
+		end
+		
+		-- translucent objects can not be hovered or interacted with further
+		if not self.translucent then
+			-- if not pressing an object, the first object found is hovered.
+			-- if pressing an object, only the pressed object can be hovered,
+			-- and only if it contains the mouse cursor
+			if not self.root.pressedchild or self == self.root.pressedchild then
+				-- pass hovered from parent to child if applicable
+				if self.parent and self.parent.hovered then
+					self.parent.hovered = false
+					self.root.hoveredchild = nil
+				end
+				
+				-- the first object we find is the hovered object
+				if not self.root.hoveredchild then
+					self.root.hoveredchild = self
+					self.hovered = true
+					
+					if self.tooltip then
+						self.root.tooltip = self.tooltip
+					end
+				end
 			end
-
-			if child:mousemove(mx, my) then
-				return true
+		end
+		
+		for i=1,#self.children do
+			local child = self.children[i]
+			if child ~= self.root.pressedchild then -- dont iterate pressedchild again. It is always handled from root
+				if
+					not child.disabled     and
+					not child.ignoreMouse  and
+					child.visible
+				then
+					-- fire mousemove for all children to check if they contain the mouse
+					child:mousemove(mx, my)
+				end
 			end
-		elseif child.containsMouse then
-			child.containsMouse = false
-			child:mouseExited()
 		end
 	end
-	
-	if self.translucent then return false end
-	return true
+
+	return false
 end
 
 function Ui:keydown(keycode)
@@ -536,15 +572,28 @@ function Ui:startDrag(mx, my, button)
 	self:stopDrag(mx, my, button)
 end
 
+function Ui:setSwappable(flag)
+	self.swappable = flag
+	return self
+end
+
+function Ui:isSwappable()
+	-- defaults to swappable
+	return self.swappable ~= false
+end
+
 function Ui:swapSibling(destIndex)
 	if self.parent == nil then return self end
+	if not self:isSwappable() then return self end
 	local list = self.parent.children
 	if destIndex < 1 or destIndex > #list then return self end
 	local sourceIndex = list_indexof(list, self)
 
 	local dest = list[destIndex]
-	list[destIndex] = self
-	list[sourceIndex] = dest
+	if dest:isSwappable() then
+		list[destIndex] = self
+		list[sourceIndex] = dest
+	end
 
 	return self
 end
@@ -571,14 +620,21 @@ function Ui:bringToTop()
 	if self.parent == nil then return self end
 	local list = self.parent.children
 	
-	for k,v in pairs(list) do
+	for k,v in ipairs(list) do
 		if self == v then
 			table.remove(list, k)
 			break
 		end
 	end
 	
-	table.insert(list, 1, self)
-	return self
+	for k,v in ipairs(list) do
+		if v:isSwappable() then
+			table.insert(list, k, self)
+			return self
+		end
+	end
+	
+	-- default backup
+	table.insert(list, self)
 end
 
