@@ -79,7 +79,7 @@ function UiRoot:event(eventloop)
 		local button = eventloop:mousebutton()
 		self:setfocus(nil)
 		
-		local res = self:mousedown(mx, my, button)
+		local result = self:mousedown(mx, my, button)
 		
 		-- inform open dropDownUi's of mouse down event,
 		-- even if the mouse click was outside of its area,
@@ -92,36 +92,33 @@ function UiRoot:event(eventloop)
 		
 		self:cleanupDropdown()
 		
-		return res
+		return result
 	end
 	
 	if type == sdl.events.mousebuttonup then
 		local button = eventloop:mousebutton()
 		
-		-- reset hoveredchild
-		if self.hoveredchild ~= nil then
-			self.hoveredchild.hovered = false
-			self.hoveredchild = nil
-		end
-		
 		-- call mouseup for all eligible objects
-		local res = self:mouseup(mx, my, button)
+		local result = self:mouseup(mx, my, button)
 		
 		-- if pressedchild has not been released, release it now
 		local pressedchild = self.pressedchild
 		if pressedchild then
 			self.pressedchild = nil
 			pressedchild.pressed = false
-			pressedchild:mouseup(mx, my, button)
+			result = pressedchild:mouseup(mx, my, button)
 		end
+		
+		self:event({
+			type = function() return sdl.events.mousemotion end
+		})
 		
 		self:cleanupDropdown()
 		
-		return res
+		return result
 	end
 	
 	if type == sdl.events.mousemotion then
-		local handled = false
 		
 		-- reset hoveredchild
 		if self.hoveredchild ~= nil then
@@ -168,10 +165,7 @@ function UiRoot:event(eventloop)
 			end
 		end
 		
-		-- handle normal mouse movement
-		handled = self:mousemove(mx, my) or handled
-		
-		return handled
+		return self:mousemove(mx, my)
 	end
 
 	if type == sdl.events.keydown then

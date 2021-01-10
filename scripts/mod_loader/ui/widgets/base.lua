@@ -260,9 +260,7 @@ function Ui:mousedown(mx, my, button)
 			child.visible          and
 			child.containsMouse
 		then
-			if child:mousedown(mx, my, button) then
-				return true
-			end
+			child:mousedown(mx, my, button)
 		end
 	end
 
@@ -305,22 +303,6 @@ end
 
 function Ui:mouseup(mx, my, button)
 	local pressedchild
-	local presshandled = false
-	
-	-- translucent objects can not be hovered or interacted with
-	if not self.translucent then
-		-- pass hovered from parent to child
-		if self.parent and self.parent.hovered then
-			self.parent.hovered = false
-			self.root.hoveredchild = nil
-		end
-		
-		-- the first object we find is the hovered object
-		if not self.root.hoveredchild then
-			self.root.hoveredchild = self
-			self.hovered = true
-		end
-	end
 	
 	-- call mouseup on all eligible objects
 	for i=1,#self.children do
@@ -336,41 +318,32 @@ function Ui:mouseup(mx, my, button)
 			child.visible                       and
 			child.containsMouse
 		then
-			if child:mouseup(mx, my, button) then
-				presshandled = true
-			end
+			child:mouseup(mx, my, button)
 		end
 	end
 	
-	-- only treat button 1 as button press
+	-- only treat mouse button 1 as mouse click
 	if button == 1 then
-		if not self.root then
-			self.pressed = false
-			self:clicked(button)
-		elseif self == self.root.pressedchild then
+		if self == self.root.pressedchild then
 			self.root.pressedchild = nil
 			self.pressed = false
 			self:clicked(button)
 		end
 		
 		if self.dragged then
-			local root = self.root
 			self.dragged = false
 			self:stopDrag(mx, my, button)
 			
-			if root then
-				root.draggedElement = nil
-				root:relayout()
-				root:event({
-					type = function() return sdl.events.mousemotion end
-				})
-			end
+			self.root.draggedElement = nil
+			self.root:relayout()
 		end
-		
-		presshandled = true
 	end
 	
-	return pressedchild and pressedchild:mouseup(mx, my, button) or presshandled
+	if pressedchild then
+		return pressedchild:mouseup(mx, my, button)
+	end
+	
+	return false
 end
 
 function Ui:mousemove(mx, my)
