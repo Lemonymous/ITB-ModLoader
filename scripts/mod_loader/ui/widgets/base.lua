@@ -249,7 +249,8 @@ function Ui:wheel(mx,my,y)
 end
 
 function Ui:mousedown(mx, my, button)
-
+	local consumeEvent = self.translucent == false
+	
 	-- iterate all eligible objects
 	for i=1,#self.children do
 		local child = self.children[i]
@@ -260,27 +261,11 @@ function Ui:mousedown(mx, my, button)
 			child.visible          and
 			child.containsMouse
 		then
-			child:mousedown(mx, my, button)
+			consumeEvent = child:mousedown(mx, my, button) or consumeEvent
 		end
 	end
 
-	if button == 3 then
-		if self.root.pressedchild then
-			local child = self.root.pressedchild
-			self.root.pressedchild = nil
-			
-			child:setfocus(nil)
-			child.pressed = false
-			
-			-- treat right mouse click as left mouse up
-			-- if an object is being dragged
-			if child.dragged then
-				child:mouseup(mx, my, 1)
-			end
-			
-			return true
-		end
-	elseif button == 1 then
+	if button == 1 then
 		-- only hovered objects can be pressed
 		if self.hovered and not self.root.pressedchild then
 			
@@ -290,63 +275,42 @@ function Ui:mousedown(mx, my, button)
 			self.pressed = true
 
 			if self.draggable then
+				self.root.draggedElement = self
 				self.dragged = true
 				self:startDrag(mx, my, button)
 			end
-			
-			return true
 		end
 	end
 	
-	return false
+	return consumeEvent
 end
 
 function Ui:mouseup(mx, my, button)
-	local pressedchild
+	local consumeEvent = self.translucent == false
 	
 	-- call mouseup on all eligible objects
 	for i=1,#self.children do
 		local child = self.children[i]
 		
-		if child == self.root.pressedchild then
-			-- handle pressed child later, in case
-			-- it leads to fractured ui structure
-			pressedchild = child
-		elseif
+		-- handle pressed child later, in case
+		-- it leads to fractured ui structure
+		if
+			child ~= self.root.pressedchild     and
 			not child.disabled                  and
 			not child.ignoreMouse               and
 			child.visible                       and
 			child.containsMouse
 		then
-			child:mouseup(mx, my, button)
+			consumeEvent = child:mouseup(mx, my, button) or consumeEvent
 		end
 	end
 	
-	-- only treat mouse button 1 as mouse click
-	if button == 1 then
-		if self == self.root.pressedchild then
-			self.root.pressedchild = nil
-			self.pressed = false
-			self:clicked(button)
-		end
-		
-		if self.dragged then
-			self.dragged = false
-			self:stopDrag(mx, my, button)
-			
-			self.root.draggedElement = nil
-			self.root:relayout()
-		end
-	end
-	
-	if pressedchild then
-		return pressedchild:mouseup(mx, my, button)
-	end
-	
-	return false
+	return consumeEvent
 end
 
 function Ui:mousemove(mx, my)
+	local consumeEvent = self.translucent == false
+	
 	-- handle dragMove regardless of containsMouse or translucent
 	if self.dragged then
 		self:dragMove(mx, my)
@@ -402,13 +366,13 @@ function Ui:mousemove(mx, my)
 					child.visible
 				then
 					-- fire mousemove for all children to check if they contain the mouse
-					child:mousemove(mx, my)
+					consumeEvent = child:mousemove(mx, my) or consumeEvent
 				end
 			end
 		end
 	end
 
-	return false
+	return consumeEvent
 end
 
 function Ui:keydown(keycode)

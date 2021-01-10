@@ -64,6 +64,22 @@ function UiRoot:cleanupDropdown()
 	end
 end
 
+function UiRoot:releasePressedElement(mx, my, button)
+	if not self.pressedchild then return end
+	
+	self.pressedchild.pressed = false
+	self.pressedchild:setfocus(nil)
+	self.pressedchild = nil
+end
+
+function UiRoot:releaseDraggedElement(mx, my, button)
+	if not self.draggedElement then return end
+
+	self.draggedElement.dragged = false
+	self.draggedElement:stopDrag(mx, my, button)
+	self.draggedElement = nil
+end
+
 function UiRoot:event(eventloop)
 	if not self.visible then return false end
 	
@@ -79,7 +95,9 @@ function UiRoot:event(eventloop)
 		local button = eventloop:mousebutton()
 		self:setfocus(nil)
 		
-		local result = self:mousedown(mx, my, button)
+		self:releaseDraggedElement(mx, my, button)
+		
+		local consumeEvent = self:mousedown(mx, my, button)
 		
 		-- inform open dropDownUi's of mouse down event,
 		-- even if the mouse click was outside of its area,
@@ -92,30 +110,49 @@ function UiRoot:event(eventloop)
 		
 		self:cleanupDropdown()
 		
-		return result
+		if button == 3 then
+			-- release pressed left mouse on right mouse down
+			self:releasePressedElement()
+			
+			-- release dragged element on right mouse down
+			self:releaseDraggedElement(mx, my, button)
+		end
+		
+		return consumeEvent
 	end
 	
 	if type == sdl.events.mousebuttonup then
 		local button = eventloop:mousebutton()
 		
 		-- call mouseup for all eligible objects
-		local result = self:mouseup(mx, my, button)
+		local consumeEvent = self:mouseup(mx, my, button)
 		
-		-- if pressedchild has not been released, release it now
-		local pressedchild = self.pressedchild
-		if pressedchild then
-			self.pressedchild = nil
-			pressedchild.pressed = false
-			result = pressedchild:mouseup(mx, my, button)
+		if button == 1 then
+			local pressedchild = self.pressedchild
+			if pressedchild then
+				-- release pressed left mouse on left mouse up
+				self:releasePressedElement()
+				
+				-- and click it
+				consumeEvent = pressedchild:mouseup(mx, my, button)
+				pressedchild:clicked(button)
+			end
+			
+			-- release dragged element on left mouse up
+			self:releaseDraggedElement(mx, my, button)
+			
+			-- relayout any potential ui changes
+			self:relayout()
 		end
 		
+		self:cleanupDropdown()
+		
+		-- run a mousemotion event to update ui element variable status
 		self:event({
 			type = function() return sdl.events.mousemotion end
 		})
 		
-		self:cleanupDropdown()
-		
-		return result
+		return consumeEvent
 	end
 	
 	if type == sdl.events.mousemotion then
@@ -170,7 +207,15 @@ function UiRoot:event(eventloop)
 
 	if type == sdl.events.keydown then
 		if self.focuschild then
-			return self.focuschild:keydown(eventloop:keycode())
+			local consumeEvent = self.focuschild:keydown(eventloop:keycode())
+			
+			-- temporary measure to test update on escape for ui dialogs
+			-- run a mousemotion event to update ui element variable status
+			self:event({
+				type = function() return sdl.events.mousemotion end
+			})
+			
+			return consumeEvent
 		else
 			return false
 		end
