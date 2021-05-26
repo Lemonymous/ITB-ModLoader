@@ -21,6 +21,7 @@ local scripts = {
 	"mission",
 	"skills",
 	"savedata",
+	"gameState",
 	"hotkey",
 	"board",
 	"pawn",

@@ -79,6 +79,7 @@ t.onStatusTooltipWindowShown = Event()
 t.onStatusTooltipWindowHidden = Event()
 
 t.onMissionChanged = Event()
+t.onGameStateChanged = Event()
 t.onGameVictory = Event()
 
 t.onShiftToggled = Event()
