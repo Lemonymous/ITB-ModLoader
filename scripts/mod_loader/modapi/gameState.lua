@@ -27,8 +27,8 @@ modApi.events.onGameExited:subscribe(function()
 	setGameState(GAME_STATE_MAIN_MENU)
 end)
 
-local function updateGameState(mission)
-	mission = mission or GetCurrentMission()
+local function updateGameState()
+	mission = GetCurrentMission()
 
 	if not Game then
 		setGameState(GAME_STATE_MAIN_MENU)
